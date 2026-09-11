@@ -25,7 +25,8 @@ export function LiveRoom({ gameId, role }: { gameId: string; role: "viewer" | "b
     room.on(RoomEvent.Disconnected, () => { setActive(false); setStatus("Disconnected"); });
     await room.connect(body.serverUrl, body.token);
     if (role === "broadcaster") {
-      const tracks=await createLocalTracks({audio:true,video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}});
+      const tracks=await createLocalTracks({  audio: true,  video: {
+    facingMode: "environment",  },})
       for(const track of tracks){await room.localParticipant.publishTrack(track);if(track.kind===Track.Kind.Video)mediaRef.current?.appendChild(track.attach())}
     }
     setActive(true);
