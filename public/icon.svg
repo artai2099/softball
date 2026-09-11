@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="GameDay G">
+  <rect width="512" height="512" rx="112" fill="#041e42"/>
+  <circle cx="256" cy="256" r="164" fill="#ffffff"/>
+  <path d="M366 183c-26-31-61-47-105-47-72 0-122 50-122 121s50 119 123 119c39 0 75-12 111-37v-93H251v58h54v25c-13 6-27 9-43 9-42 0-69-32-69-82 0-49 27-82 68-82 27 0 49 10 67 31z" fill="#041e42"/>
+  <path d="M109 167c24 17 43 20 67 12M336 333c25-7 44-4 68 12" fill="none" stroke="#d50032" stroke-width="17" stroke-linecap="round"/>
+</svg>
