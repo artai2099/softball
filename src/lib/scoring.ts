@@ -8,6 +8,7 @@ export const scoreEventSchema = z.object({
   idempotencyKey: z.string().uuid(),
   expectedVersion: z.number().int().nonnegative(),
   details: z.object({
+    batter_id: z.string().uuid().optional(),
     error_position: defensivePosition.optional(),
     out_position_1: defensivePosition.optional(),
     out_position_2: defensivePosition.optional(),

@@ -22,5 +22,6 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key-that-is-long-enough
           SUPABASE_SERVICE_ROLE_KEY: test-service-role-key-that-is-long-enough
           LIVEKIT_URL: wss://example.livekit.cloud
+          LIVEKIT_PUBLIC_URL: wss://example.livekit.cloud
           LIVEKIT_API_KEY: test-key
           LIVEKIT_API_SECRET: test-livekit-secret-that-is-long-enough

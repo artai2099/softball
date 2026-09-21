@@ -94,3 +94,8 @@ Open `http://localhost:3000`. After the first successful install, commit the gen
 ## Remaining product work before a broad commercial launch
 
 This is a production-oriented foundation, not a completed commercial service. Before handling youth data at scale, add a privacy policy, terms, parental-consent workflow where applicable, data export/deletion, abuse reporting, support procedures, database integration tests, accessibility testing, analytics consent, and an incident-response plan.
+
+
+## Scoring hardening migration
+
+After deploying the updated application, apply the new Supabase migration with `supabase db push`. The migration adds current batter tracking, prevents undo on finalized games until the game is explicitly reopened, preserves the stored pitch count, and adds the reopen RPC used by the scoring console.

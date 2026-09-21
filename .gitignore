@@ -1,8 +1,21 @@
-node_modules
-.next
+# Environment / secrets
 .env
 .env.local
-coverage
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Logs
 *.log
+
+# TypeScript
+*.tsbuildinfo
+
+# OS/editor
 .DS_Store
-tsconfig.tsbuildinfo
+.vscode/

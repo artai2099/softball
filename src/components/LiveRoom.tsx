@@ -16,6 +16,14 @@ export function LiveRoom({ gameId, role }: { gameId: string; role: "viewer" | "b
     const response = await fetch("/api/livekit/token", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ gameId, role }) });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || "Video connection failed");
+    if (typeof window !== "undefined") {
+      const serverUrl = new URL(body.serverUrl);
+      const browserIsLocal = ["localhost", "127.0.0.1", "0.0.0.0"].includes(window.location.hostname);
+      const liveKitIsLocal = ["localhost", "127.0.0.1", "0.0.0.0"].includes(serverUrl.hostname);
+      if (liveKitIsLocal && !browserIsLocal) {
+        throw new Error("Live video is configured for localhost. Set LIVEKIT_PUBLIC_URL in Vercel to a public wss:// LiveKit endpoint.");
+      }
+    }
     const room = new Room({ adaptiveStream: true, dynacast: true });
     roomRef.current = room;
     room.on(RoomEvent.TrackSubscribed, track => {

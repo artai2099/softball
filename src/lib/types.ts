@@ -28,6 +28,8 @@ half: "top" | "bottom";
 outs: number;
 balls: number;
 strikes: number;
+pitch_count: number;
+current_batter_id: string | null;
 home_score: number;
 away_score: number;
 bases: Record<"1" | "2" | "3", string | null>;

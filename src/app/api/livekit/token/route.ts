@@ -32,5 +32,5 @@ export async function POST(request: Request) {
   const identity = user ? `${user.id}-${randomUUID()}` : `viewer-${randomUUID()}`;
   const token = new AccessToken(env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET, { identity, ttl: "15m" });
   token.addGrant({ roomJoin: true, room, canPublish: parsed.data.role === "broadcaster", canSubscribe: true, canPublishData: false });
-  return NextResponse.json({ token: await token.toJwt(), serverUrl:env.LIVEKIT_URL, room }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ token: await token.toJwt(), serverUrl:env.LIVEKIT_PUBLIC_URL || env.LIVEKIT_URL, room }, { headers: { "Cache-Control": "no-store" } });
 }
