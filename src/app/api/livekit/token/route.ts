@@ -15,8 +15,12 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const keyHash = createHash("sha256").update(`${ip}:livekit-token`).digest("hex");
-  const { data: allowed } = await admin.rpc("consume_rate_limit", { p_key_hash: keyHash, p_limit: 30, p_window_seconds: 60 });
-  if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  const { data: allowed, error: rateLimitError } = await admin.rpc("consume_rate_limit", { p_key_hash: keyHash, p_limit: 30, p_window_seconds: 60 });
+  if (rateLimitError) {
+    console.error("consume_rate_limit failed:", rateLimitError);
+    return NextResponse.json({ error: "Rate limit service unavailable" }, { status: 503 });
+  }
+  if (allowed !== true) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const { data: game } = await admin.from("games").select("id,organization_id,visibility,status").eq("id", parsed.data.gameId).single();
   if (!game) return NextResponse.json({ error: "Game not found" }, { status: 404 });
   const supabase = await createClient();
