@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
           "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
           "style-src 'self' 'unsafe-inline'",
           "img-src 'self' data: blob:",
-          `connect-src 'self' https://*.supabase.co wss://*.supabase.co wss://*.livekit.cloud https://vercel.live${configuredLiveKitOrigin ? ` ${configuredLiveKitOrigin}` : ""}`,
+          `connect-src 'self' https://*.supabase.co wss://*.supabase.co wss://*.livekit.cloud https://*.livekit.cloud https://vercel.live${configuredLiveKitOrigin ? ` ${configuredLiveKitOrigin}` : ""}`,
           "media-src 'self' blob: data:",
           "worker-src 'self' blob:",
           "font-src 'self' data:",
