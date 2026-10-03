@@ -436,7 +436,6 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
             <div className="cameraDetailsBody">
               <LiveRoom
                 gameId={game.id}
-                game={game}
                 role={canScore ? "broadcaster" : "viewer"}
               />
             </div>
