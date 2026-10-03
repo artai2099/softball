@@ -3,25 +3,63 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { defensivePositions } from "@/lib/scoring";
-import type { Game,GameEvent } from "@/lib/types";
+import type { Game,GameEvent,GameLineupPlayerView } from "@/lib/types";
 import { LiveRoom } from "./LiveRoom";
 import { PlayFeed } from "./PlayFeed";
 
 const labels: Record<string,string> = { ball:"Ball",strike:"Strike",foul:"Foul",single:"1B",double:"2B",triple:"3B",home_run:"HR",walk:"Walk",hbp:"HBP",strikeout:"Strikeout",out:"Out",error:"Error",double_play:"Double play",triple_play:"Triple play" };
 
-export function ScoringConsole({ initialGame,initialEvents,canScore }: { initialGame: Game;initialEvents:GameEvent[];canScore:boolean }) {
+export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScore }: { initialGame: Game;initialEvents:GameEvent[];initialLineup:GameLineupPlayerView[];canScore:boolean }) {
   const [game,setGame]=useState(initialGame); const [events,setEvents]=useState(initialEvents);
   const [pending,setPending]=useState<string|null>(null); const [positions,setPositions]=useState<string[]>([]);
   const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
   const [message,setMessage]=useState(""); const [saving,setSaving]=useState(false);
   const supabase=useMemo(()=>createClient(),[]);
 
+  const scoringPlayers = initialLineup.length > 0
+    ? initialLineup
+    : players.map((player) => ({
+        id: player.id,
+        player_id: player.id,
+        first_name: player.first_name,
+        last_name: player.last_name,
+        jersey_number: player.jersey_number,
+        batting_order: null,
+        position: "",
+        starter: true,
+        active: true,
+        entered_at: null,
+        left_at: null,
+        lineup_id: "",
+        created_at: "",
+      }));
+
+  useEffect(() => {
+    if (game.half !== "bottom" || scoringPlayers.length === 0) {
+      return;
+    }
+
+    const ordered = [...scoringPlayers]
+      .filter((player) => player.active)
+      .sort((a, b) => {
+        if (a.batting_order == null && b.batting_order == null) return 0;
+        if (a.batting_order == null) return 1;
+        if (b.batting_order == null) return -1;
+        return a.batting_order - b.batting_order;
+      });
+
+    const nextBatter = game.current_batter_id || ordered[0]?.player_id || null;
+
+    if (nextBatter && batterId !== nextBatter) {
+      setBatterId(nextBatter);
+    }
+  }, [game.half, game.current_batter_id, scoringPlayers, batterId]);
   useEffect(()=>{ const channel=supabase.channel(`game-${game.id}`).on("postgres_changes",{event:"UPDATE",schema:"public",table:"games",filter:`id=eq.${game.id}`},p=>setGame(p.new as Game)).on("postgres_changes",{event:"INSERT",schema:"public",table:"game_events",filter:`game_id=eq.${game.id}`},p=>setEvents(c=>c.some(e=>e.id===p.new.id)?c:[...c,p.new as GameEvent])).subscribe(); return()=>{void supabase.removeChannel(channel)}; },[game.id,supabase]);
 
   useEffect(()=>{ if(!game.home_team_id)return; void supabase.from("players").select("id,first_name,last_name,jersey_number").eq("team_id",game.home_team_id).eq("active",true).order("jersey_number").then(({data})=>setPlayers(data||[])); },[game.home_team_id,supabase]);
 
   const required=pending==="error"||pending==="out"?1:pending==="double_play"?2:pending==="triple_play"?3:0;
-  const activeBatter=players.find(p=>p.id===batterId);
+  const activeBatter=scoringPlayers.find(p=>p.player_id===batterId);
   async function record(result:string,selected:string[]=[]) {
     setSaving(true);setMessage("");
     const details={...(result==="error"?{error_position:selected[0]}:Object.fromEntries(selected.map((position,index)=>[`out_position_${index+1}`,position]))),...(batterId?{batter_id:batterId}:{})};
@@ -38,24 +76,375 @@ export function ScoringConsole({ initialGame,initialEvents,canScore }: { initial
       const contentType=response.headers.get("content-type")||"";
       const body=contentType.includes("application/json") ? await response.json() : {error:`Scoring server returned HTTP ${response.status}`};
       if(response.status===409){const latest=await supabase.from("games").select("*").eq("id",game.id).single();if(latest.data)setGame(latest.data as Game);throw new Error("Another scorekeeper updated the game. The latest score has been loaded.");}
-      if(!response.ok)throw new Error(body.error||"Play could not be recorded"); setGame(body.game as Game); setBatterId((body.game as Game).current_batter_id||null); setPending(null);setPositions([]);
+      if(!response.ok)throw new Error(body.error||"Play could not be recorded"); const updatedGame=body.game as Game; setGame(updatedGame); setBatterId(updatedGame.current_batter_id||null); setPending(null);setPositions([]); if(updatedGame.status==="final"){window.location.assign("/dashboard");}
     }catch(error){setMessage(error instanceof Error?error.message:"Play could not be recorded");}finally{setSaving(false)}
   }
   function choose(result:string){if(["out","error","double_play","triple_play"].includes(result)){setPending(result);setPositions([])}else void record(result)}
   function selectPosition(position:string){setPositions(c=>c.length<required?[...c,position]:[...c.slice(0,-1),position])}
   async function undo(){if(game.status==="final")return;setSaving(true);setMessage("");try{const r=await fetch(`/api/games/${game.id}/undo`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({expectedVersion:game.version})});const b=await r.json();if(!r.ok)throw new Error(b.error||"Undo failed");setGame(b.game as Game);setBatterId((b.game as Game).current_batter_id||null)}catch(e){setMessage(e instanceof Error?e.message:"Undo failed")}finally{setSaving(false)}}
-  async function finish(){if(!window.confirm("Finalize this game? You can reopen it later."))return;setSaving(true);setMessage("");try{const r=await fetch(`/api/games/${game.id}/finish`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({expectedVersion:game.version})});const b=await r.json();if(!r.ok)throw new Error(b.error||"Game could not be finalized");setGame(b.game as Game)}catch(e){setMessage(e instanceof Error?e.message:"Game could not be finalized")}finally{setSaving(false)}}
+  async function finish(){if(!window.confirm("Finalize this game? You can reopen it later."))return;setSaving(true);setMessage("");try{const r=await fetch(`/api/games/${game.id}/finish`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({expectedVersion:game.version})});const b=await r.json();if(!r.ok)throw new Error(b.error||"Game could not be finalized");setGame(b.game as Game);window.location.assign("/dashboard")}catch(e){setMessage(e instanceof Error?e.message:"Game could not be finalized")}finally{setSaving(false)}}
   async function reopen(){setSaving(true);setMessage("");try{const r=await fetch(`/api/games/${game.id}/reopen`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({expectedVersion:game.version})});const b=await r.json();if(!r.ok)throw new Error(b.error||"Game could not be reopened");setGame(b.game as Game)}catch(e){setMessage(e instanceof Error?e.message:"Game could not be reopened")}finally{setSaving(false)}}
 
-  return <div className="livePage"><div className="liveGrid"><main>
-    <div className="liveLabel">{game.status==="live"?"● Live scorecast":game.status==="final"?"Final":"Scheduled"} · {game.venue||"GameDay Field"}</div>
-    <section className="scoreboard"><div><div className="teamLabel">{game.away_name}</div><div className="score">{game.away_score}</div></div><div className="inningBox"><small>{game.half==="top"?"▲ TOP":"▼ BOT"}</small><div className="inningNumber">{game.inning}</div><small>{game.outs} OUT</small></div><div><div className="teamLabel">{game.home_name}</div><div className="score">{game.home_score}</div></div></section>
-    <section className="panel"><div className="pageHead"><div><div className="liveLabel">At bat</div><div className="batterLine">{activeBatter?`#${activeBatter.jersey_number} ${activeBatter.first_name} ${activeBatter.last_name}`:game.half==="bottom"?"Select batter":"Opponent batter"}</div></div><div className="batterPicker">{game.half==="bottom"&&players.length>0&&<select value={batterId||""} onChange={e=>setBatterId(e.target.value||null)} disabled={!canScore||saving||game.status==="final"}><option value="">Select batter</option>{players.map(p=><option key={p.id} value={p.id}>#{p.jersey_number} {p.first_name} {p.last_name}</option>)}</select>}</div></div><div className="count"><span>B {game.balls}</span><span>S {game.strikes}</span><span>O {game.outs}</span><span>P {(game.pitch_count ?? 0)}</span></div></section>
-    {canScore?<section className="panel"><div className="liveLabel">Pitch / play</div><div className="actionGrid">{Object.entries(labels).map(([result,label])=><button type="button" disabled={saving||game.status==="final"} className={`scoreButton ${result==="ball"?"primary":""} ${result==="home_run"||result==="out"?"danger":""}`} key={result} onClick={()=>choose(result)}>{label}</button>)}</div></section>:<p className="notice">You have read-only access to this game.</p>}
-    {canScore&&pending&&<section className="panel"><h3>{labels[pending]}</h3><p className="notice">Select {required} defensive position{required>1?"s":""} in out order.</p><div className="defenseGrid">{defensivePositions.map(position=><button type="button" className={`position ${positions.includes(position)?"selected":""}`} key={position} onClick={()=>selectPosition(position)}>{position}</button>)}</div><div className="pageHead actionFooter"><span>{positions.join(" → ")||"No position selected"}</span><div><button type="button" className="button secondary" onClick={()=>setPending(null)}>Cancel</button> <button type="button" className="button red" disabled={positions.length!==required||saving} onClick={()=>void record(pending,positions)}>Record play</button></div></div></section>}
-    {message&&<p className="error" role="alert">{message}</p>}
-  </main><aside>
-    <section className="panel"><div className="liveLabel">Base runners</div><div className="diamond"><div className={`baseNode home ${game.bases?.["1"]?"on":""}`}><span>1B</span></div><div className={`baseNode second ${game.bases?.["2"]?"on":""}`}><span>2B</span></div><div className={`baseNode third ${game.bases?.["3"]?"on":""}`}><span>3B</span></div><div className="baseNode plate"><span>HP</span></div></div><div className="runnerLegend">{(["1","2","3"] as const).map(base=>game.bases?.[base]?<div key={base}><b>{base}B</b> · runner on base</div>:null)}{!game.bases?.["1"]&&!game.bases?.["2"]&&!game.bases?.["3"]&&<span>Bases empty</span>}</div></section>
-    {canScore&&<section className="panel gameControls"><div className="liveLabel">Game controls</div><div className="controlRow"><button type="button" className="button secondary" disabled={saving||game.status==="final"} onClick={()=>void undo()}>Undo</button>{game.status==="final"?<button type="button" className="button primary" disabled={saving} onClick={()=>void reopen()}>Reopen game</button>:<button type="button" className="button red" disabled={saving} onClick={()=>void finish()}>Finish game</button>}</div></section>}
-    <PlayFeed events={events}/><LiveRoom gameId={game.id} role={canScore?"broadcaster":"viewer"} /></aside></div></div>;
+  return (
+    <div className="livePage">
+
+      <section className="scorekeeperTop">
+        <div className="scorekeeperTitle">
+          <div>
+            <div className="liveLabel">{game.status === "live" ? "LIVE SCOREKEEPER" : game.status.toUpperCase()}</div>
+            <h1>{game.away_name} <span>@</span> {game.home_name}</h1>
+            <p>{game.venue || "GameDay Field"} · {game.innings_scheduled} inning game</p>
+          </div>
+          <a className="button secondary" href="/dashboard/games">Games</a>
+        </div>
+
+        <div className="scorekeeperScore">
+          <div className="scoreTeam">
+            <span>{game.away_name}</span>
+            <strong>{game.away_score}</strong>
+          </div>
+          <div className="scoreMiddle">
+            <b>{game.half === "top" ? "TOP" : "BOT"} {game.inning}</b>
+            <div className="scoreCount">
+              <span>B {game.balls}</span>
+              <span>S {game.strikes}</span>
+              <span>O {game.outs}</span>
+            </div>
+          </div>
+          <div className="scoreTeam home">
+            <strong>{game.home_score}</strong>
+            <span>{game.home_name}</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="liveGrid">
+
+        <main>
+
+          <div className="pageHead" style={{ alignItems: "center", marginBottom: 8 }}>
+            <div className="liveLabel">
+              {game.status==="live"
+                ? "● Live scorecast"
+                : game.status==="final"
+                  ? "Final"
+                  : "Scheduled"} · {game.venue||"GameDay Field"}
+            </div>
+
+            <a
+              className="button secondary"
+              href={`/dashboard/games/${game.id}/stats`}
+            >
+              Stats
+            </a>
+          </div>
+
+
+          <section className="panel">
+
+            <div className="pageHead">
+
+              <div>
+
+                <div className="liveLabel">
+                  At bat
+                </div>
+
+                <div className="batterLine">
+                  {activeBatter
+                    ? `#${activeBatter.jersey_number} ${activeBatter.first_name} ${activeBatter.last_name}`
+                    : game.half==="bottom"
+                      ? "Select batter"
+                      : "Opponent batter"}
+                </div>
+
+              </div>
+
+
+              <div className="batterPicker">
+
+                {game.half==="bottom"&&scoringPlayers.length>0&&(
+                  initialLineup.length > 0 ? (
+                    <span className="notice">
+                      Batting order · {activeBatter?.batting_order ?? 1}
+                    </span>
+                  ) : (
+                    <select
+                      value={batterId||""}
+                      onChange={e=>setBatterId(e.target.value||null)}
+                      disabled={!canScore||saving||game.status==="final"}
+                    >
+                      <option value="">Select batter</option>
+
+                      {scoringPlayers.map(p=>(
+                        <option key={p.player_id} value={p.player_id}>
+                          #{p.jersey_number} {p.first_name} {p.last_name}
+                        </option>
+                      ))}
+
+                    </select>
+                  )
+                )}
+
+              </div>
+
+            </div>
+
+
+            <div className="count">
+              <span>B {game.balls}</span>
+              <span>S {game.strikes}</span>
+              <span>O {game.outs}</span>
+              <span>P {game.pitch_count ?? 0}</span>
+            </div>
+
+          </section>
+
+
+          {canScore ? (
+            <section className="panel">
+
+              <div className="liveLabel">
+                Pitch / play
+              </div>
+
+              <div className="actionGrid">
+
+                {Object.entries(labels).map(([result,label])=>(
+                  <button
+                    type="button"
+                    disabled={saving||game.status==="final"}
+                    className={`scoreButton ${
+                      result==="ball" ? "primary" : ""
+                    } ${
+                      result==="home_run"||result==="out" ? "danger" : ""
+                    }`}
+                    key={result}
+                    onClick={()=>choose(result)}
+                  >
+                    {label}
+                  </button>
+                ))}
+
+              </div>
+
+            </section>
+          ) : (
+            <p className="notice">
+              You have read-only access to this game.
+            </p>
+          )}
+
+
+          {canScore&&pending&&(
+            <section className="panel">
+
+              <h3>{labels[pending]}</h3>
+
+              <p className="notice">
+                Select {required} defensive position
+                {required>1 ? "s" : ""}
+                {" "}in out order.
+              </p>
+
+              <div className="defenseGrid">
+
+                {defensivePositions.map(position=>(
+                  <button
+                    type="button"
+                    className={`position ${
+                      positions.includes(position) ? "selected" : ""
+                    }`}
+                    key={position}
+                    onClick={()=>selectPosition(position)}
+                  >
+                    {position}
+                  </button>
+                ))}
+
+              </div>
+
+
+              <div className="pageHead actionFooter">
+
+                <span>
+                  {positions.join(" → ")||"No position selected"}
+                </span>
+
+                <div>
+
+                  <button
+                    type="button"
+                    className="button secondary"
+                    onClick={()=>setPending(null)}
+                  >
+                    Cancel
+                  </button>{" "}
+
+                  <button
+                    type="button"
+                    className="button red"
+                    disabled={positions.length!==required||saving}
+                    onClick={()=>void record(pending,positions)}
+                  >
+                    Record play
+                  </button>
+
+                </div>
+
+              </div>
+
+            </section>
+          )}
+
+
+          {message&&(
+            <p className="error" role="alert">
+              {message}
+            </p>
+          )}
+
+        </main>
+
+
+        <aside>
+
+          <section className="panel">
+
+            <div className="liveLabel">
+              Base runners
+            </div>
+
+            <div className="diamond">
+
+              <div
+                className={`baseNode home ${
+                  game.bases?.["1"] ? "on" : ""
+                }`}
+              >
+                <span>1B</span>
+              </div>
+
+              <div
+                className={`baseNode second ${
+                  game.bases?.["2"] ? "on" : ""
+                }`}
+              >
+                <span>2B</span>
+              </div>
+
+              <div
+                className={`baseNode third ${
+                  game.bases?.["3"] ? "on" : ""
+                }`}
+              >
+                <span>3B</span>
+              </div>
+
+              <div className="baseNode plate">
+                <span>HP</span>
+              </div>
+
+            </div>
+
+
+            <div className="runnerLegend">
+              {(["1","2","3"] as const).map(base => {
+                const runnerId = game.bases?.[base];
+                if (!runnerId) return null;
+                const runner = scoringPlayers.find(p => p.player_id === runnerId);
+                return (
+                  <div key={base} className="runnerItem">
+                    <b>{base}B</b>
+                    <span>
+                      {runner
+                        ? `#${runner.jersey_number} ${runner.first_name} ${runner.last_name}`
+                        : "Runner on base"}
+                    </span>
+                  </div>
+                );
+              })}
+
+              {!game.bases?.["1"] && !game.bases?.["2"] && !game.bases?.["3"] && (
+                <span>Bases empty</span>
+              )}
+            </div>
+
+          </section>
+
+
+          {canScore&&(
+            <section className="panel gameControls">
+
+              <div className="liveLabel">
+                Game controls
+              </div>
+
+              <div className="controlRow">
+
+                <button
+                  type="button"
+                  className="button secondary"
+                  disabled={saving||game.status==="final"}
+                  onClick={()=>void undo()}
+                >
+                  Undo
+                </button>
+
+
+                {game.status==="final" ? (
+                  <button
+                    type="button"
+                    className="button primary"
+                    disabled={saving}
+                    onClick={()=>void reopen()}
+                  >
+                    Reopen game
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="button red"
+                    disabled={saving}
+                    onClick={()=>void finish()}
+                  >
+                    Finish game
+                  </button>
+                )}
+
+              </div>
+
+            </section>
+          )}
+
+
+          <PlayFeed events={events}/>
+
+        </aside>
+
+      </div>
+
+      <section className="cameraPanel">
+        <div className="cameraPanelHead">
+          <div>
+            <div className="liveLabel">Game camera</div>
+            <strong>Live video</strong>
+            <span>Optional while scoring</span>
+          </div>
+          <details className="cameraDetails">
+            <summary>Open camera</summary>
+            <div className="cameraDetailsBody">
+              <LiveRoom
+                gameId={game.id}
+                game={game}
+                role={canScore ? "broadcaster" : "viewer"}
+              />
+            </div>
+          </details>
+        </div>
+      </section>
+
+    </div>
+  );
+
 }

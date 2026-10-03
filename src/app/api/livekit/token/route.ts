@@ -27,9 +27,47 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   let authorized = parsed.data.role === "viewer" && game.visibility === "public";
   if (user) {
-    const { data: membership } = await admin.from("organization_members").select("role").eq("organization_id", game.organization_id).eq("user_id", user.id).maybeSingle();
-    if (parsed.data.role === "viewer") authorized ||= Boolean(membership);
-    else authorized = Boolean(membership && ["owner", "admin", "scorekeeper"].includes(membership.role));
+    const { data: membership } = await admin
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", game.organization_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const organizationCanScore = Boolean(
+      membership && ["owner", "admin", "scorekeeper"].includes(membership.role),
+    );
+
+    let teamManagerCanScore = false;
+
+    const { data: teamIds } = await admin
+      .from("games")
+      .select("home_team_id,away_team_id")
+      .eq("id", game.id)
+      .single();
+
+    const gameTeamIds = [
+      teamIds?.home_team_id,
+      teamIds?.away_team_id,
+    ].filter((teamId): teamId is string => Boolean(teamId));
+
+    if (gameTeamIds.length > 0) {
+      const { data: teamMemberships } = await admin
+        .from("team_memberships")
+        .select("team_id,role")
+        .eq("user_id", user.id)
+        .in("team_id", gameTeamIds);
+
+      teamManagerCanScore = Boolean(
+        teamMemberships?.some((member) => member.role === "manager"),
+      );
+    }
+
+    if (parsed.data.role === "viewer") {
+      authorized ||= Boolean(membership) || teamManagerCanScore;
+    } else {
+      authorized = organizationCanScore || teamManagerCanScore;
+    }
   }
   if (!authorized) return NextResponse.json({ error: "You cannot access this game video" }, { status: 403 });
   const room = `game-${game.id}`;
