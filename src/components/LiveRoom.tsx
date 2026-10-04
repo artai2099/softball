@@ -101,6 +101,11 @@ export function LiveRoom({
       let tracks;
 
       try {
+        /*
+         * Prefer the rear/environment camera on phones,
+         * but allow the browser to choose another camera if
+         * that constraint is unavailable.
+         */
         tracks = await createLocalTracks({
           audio: true,
           video: {
@@ -108,12 +113,21 @@ export function LiveRoom({
           },
         });
       } catch {
+        /*
+         * Desktop browsers and some devices do not expose
+         * an environment camera. Fall back to any available
+         * video input instead of failing the entire stream.
+         */
         try {
           tracks = await createLocalTracks({
             audio: true,
             video: true,
           });
         } catch {
+          /*
+           * If the microphone is the part that failed,
+           * still allow the camera to start.
+           */
           tracks = await createLocalTracks({
             audio: false,
             video: true,
@@ -192,11 +206,10 @@ export function LiveRoom({
   return (
     <section className="gdpStream">
       <div className="gdpStreamStage" ref={mediaRef}>
-
         {!active && (
           <div className="gdpStreamEmpty">
-            <div className="gdpEmptyCamera">
-              <span className="gdpCameraLens" />
+            <div className="gdpStreamEmptyIcon">
+              <span>▶</span>
             </div>
 
             <strong>
@@ -214,92 +227,85 @@ export function LiveRoom({
         )}
 
         {active && (
-          <div className="gdpLiveBadge">
+          <div className="gdpLivePill">
             <span />
             LIVE
           </div>
         )}
 
-        {/* Professional broadcast scorebug */}
-        <div className="gdpBroadcastScorebug">
-
-          <div className="gdpBroadcastTeam away">
-            <div className="gdpTeamInfo">
-              <span className="gdpTeamSide">AWAY</span>
-              <strong>{game.away_name || "Away"}</strong>
-            </div>
-            <b>{awayScore}</b>
+        <div className="gdpScoreBug">
+          <div className="gdpScoreTeam gdpScoreAway">
+            <span>{game.away_name || "AWAY"}</span>
+            <strong>{awayScore}</strong>
           </div>
 
-          <div className="gdpBroadcastInning">
+          <div className="gdpScoreInning">
             <span>{half}</span>
             <strong>{inning}</strong>
           </div>
 
-          <div className="gdpBroadcastTeam home">
-            <b>{homeScore}</b>
-            <div className="gdpTeamInfo">
-              <span className="gdpTeamSide">HOME</span>
-              <strong>{game.home_name || "Home"}</strong>
-            </div>
+          <div className="gdpScoreTeam gdpScoreHome">
+            <strong>{homeScore}</strong>
+            <span>{game.home_name || "HOME"}</span>
           </div>
 
-          <div className="gdpBroadcastCount">
+          <div className="gdpCount">
             <div>
               <span>B</span>
-              <b>{game.balls ?? 0}</b>
+              <strong>{game.balls ?? 0}</strong>
             </div>
-
             <div>
               <span>S</span>
-              <b>{game.strikes ?? 0}</b>
+              <strong>{game.strikes ?? 0}</strong>
             </div>
-
             <div>
               <span>O</span>
-              <b>{game.outs ?? 0}</b>
+              <strong>{game.outs ?? 0}</strong>
             </div>
           </div>
 
-          <div className="gdpBroadcastDiamond">
+          <div className="gdpDiamond" aria-label="Base runners">
             <span
-              className={`base second ${
+              className={`gdpBase gdpSecond ${
                 game.bases?.["2"] ? "occupied" : ""
               }`}
             />
             <span
-              className={`base first ${
+              className={`gdpBase gdpFirst ${
                 game.bases?.["1"] ? "occupied" : ""
               }`}
             />
             <span
-              className={`base third ${
+              className={`gdpBase gdpThird ${
                 game.bases?.["3"] ? "occupied" : ""
               }`}
             />
-            <span className="base home" />
+            <span className="gdpBase gdpHome" />
           </div>
         </div>
 
-        {/* Fullscreen control */}
-        {active && (
-          <button
-            type="button"
-            className="gdpFullscreen"
-            onClick={fullscreen}
-            aria-label="Fullscreen"
-            title="Fullscreen"
-          >
-            <span>⛶</span>
-          </button>
-        )}
+        <div className="gdpStreamTopControls">
+          <div className="gdpStreamBrand">
+            <span className="gdpBrandMark">G</span>
+            <span>GameDay</span>
+          </div>
 
-        {/* Bottom camera controls */}
-        <div className="gdpStreamControls">
+          {active && (
+            <button
+              type="button"
+              className="gdpFullscreenButton"
+              onClick={fullscreen}
+              aria-label="Enter fullscreen"
+              title="Fullscreen"
+            >
+              ⛶
+            </button>
+          )}
+        </div>
 
-          <div className="gdpStreamStatus">
-            <span className={active ? "online" : ""} />
-
+        <div className="gdpStreamBottom">
+          <div className="gdpConnection">
+            <span className={active ? "connected" : ""} />
             <div>
               <strong>
                 {active
@@ -308,19 +314,18 @@ export function LiveRoom({
                     : "Live stream"
                   : "Camera ready"}
               </strong>
-
               <small>{status}</small>
             </div>
           </div>
 
           <button
             type="button"
-            className={`gdpStreamAction ${
+            className={`gdpStreamButton ${
               active ? "disconnect" : "start"
             }`}
             onClick={toggle}
           >
-            <span className="actionIcon">
+            <span className="gdpButtonIcon">
               {active ? "■" : "●"}
             </span>
 
@@ -330,7 +335,6 @@ export function LiveRoom({
                 ? "Start Camera"
                 : "Watch Live"}
           </button>
-
         </div>
       </div>
 
@@ -340,8 +344,8 @@ export function LiveRoom({
           margin: 0;
           overflow: hidden;
           border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 14px;
-          background: #050608;
+          border-radius: 16px;
+          background: #080a0e;
           box-shadow:
             0 18px 50px rgba(0, 0, 0, 0.25),
             0 2px 10px rgba(0, 0, 0, 0.2);
@@ -360,12 +364,12 @@ export function LiveRoom({
         .gdpStreamStage :global(.gdpStreamVideo) {
           position: absolute;
           inset: 0;
-          z-index: 1;
           width: 100%;
           height: 100%;
           display: block;
           object-fit: contain;
           background: #000;
+          z-index: 1;
         }
 
         .gdpStreamStage :global(.gdpStreamAudio) {
@@ -386,7 +390,6 @@ export function LiveRoom({
           object-fit: contain;
         }
 
-        /* Empty camera state */
         .gdpStreamEmpty {
           position: absolute;
           inset: 0;
@@ -401,45 +404,27 @@ export function LiveRoom({
           color: white;
           background:
             radial-gradient(
-              circle at 50% 42%,
-              #1d222b 0%,
-              #0c0f14 48%,
-              #050608 100%
+              circle at 50% 38%,
+              rgba(45, 52, 64, 0.75),
+              rgba(8, 10, 14, 0.96) 62%
             );
         }
 
-        .gdpEmptyCamera {
-          width: 58px;
-          height: 42px;
-          position: relative;
+        .gdpStreamEmptyIcon {
+          width: 52px;
+          height: 52px;
           display: grid;
           place-items: center;
-          margin-bottom: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.17);
-          border-radius: 10px;
+          margin-bottom: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 15px;
           background: rgba(255, 255, 255, 0.06);
-          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+          color: rgba(255, 255, 255, 0.82);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
         }
 
-        .gdpEmptyCamera::before {
-          content: "";
-          position: absolute;
-          right: -7px;
-          top: 12px;
-          width: 8px;
-          height: 17px;
-          border-radius: 2px;
-          background: rgba(255, 255, 255, 0.14);
-        }
-
-        .gdpCameraLens {
-          width: 16px;
-          height: 16px;
-          border: 2px solid rgba(255, 255, 255, 0.65);
-          border-radius: 50%;
-          box-shadow:
-            inset 0 0 0 4px rgba(255, 255, 255, 0.06),
-            0 0 12px rgba(255, 255, 255, 0.08);
+        .gdpStreamEmptyIcon span {
+          font-size: 18px;
         }
 
         .gdpStreamEmpty strong {
@@ -450,523 +435,525 @@ export function LiveRoom({
 
         .gdpStreamEmpty > span {
           max-width: 330px;
-          color: rgba(255, 255, 255, 0.48);
+          color: rgba(255, 255, 255, 0.52);
           font-size: 12px;
         }
 
-        /* LIVE indicator */
-        .gdpLiveBadge {
+        .gdpLivePill {
           position: absolute;
           top: 14px;
           left: 14px;
-          z-index: 10;
+          z-index: 8;
           display: flex;
           align-items: center;
           gap: 7px;
           padding: 6px 9px;
-          border: 1px solid rgba(255, 255, 255, 0.13);
+          border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 999px;
-          background: rgba(4, 6, 9, 0.78);
+          background: rgba(5, 7, 10, 0.78);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
           color: white;
           font-size: 9px;
-          font-weight: 900;
+          font-weight: 850;
           letter-spacing: 0.1em;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
         }
 
-        .gdpLiveBadge span {
+        .gdpLivePill span {
           width: 6px;
           height: 6px;
           border-radius: 50%;
           background: #ff3b30;
-          box-shadow:
-            0 0 0 3px rgba(255, 59, 48, 0.13),
-            0 0 10px rgba(255, 59, 48, 0.45);
+          box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.16);
         }
 
-        /* Main broadcast scorebug */
-        .gdpBroadcastScorebug {
+        .gdpScoreBug {
           position: absolute;
           top: 14px;
           left: 50%;
-          z-index: 8;
+          z-index: 7;
           transform: translateX(-50%);
-          width: min(780px, calc(100% - 108px));
-          min-height: 58px;
+          width: min(760px, calc(100% - 100px));
+          min-height: 54px;
           display: grid;
-          grid-template-columns:
-            minmax(0, 1fr)
-            52px
-            minmax(0, 1fr)
-            auto
-            48px;
+          grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr) auto 56px;
           align-items: center;
-          gap: 7px;
-          padding: 6px 9px;
+          gap: 8px;
+          padding: 7px 10px;
           box-sizing: border-box;
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          border-radius: 11px;
-          background: rgba(3, 5, 8, 0.9);
-          box-shadow:
-            0 12px 30px rgba(0, 0, 0, 0.32),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.13);
+          border-radius: 13px;
+          background: rgba(5, 7, 10, 0.86);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
           color: white;
           pointer-events: none;
         }
 
-        .gdpBroadcastTeam {
+        .gdpScoreTeam {
           min-width: 0;
           display: flex;
           align-items: center;
           gap: 9px;
         }
 
-        .gdpBroadcastTeam.away {
+        .gdpScoreAway {
           justify-content: flex-start;
         }
 
-        .gdpBroadcastTeam.home {
+        .gdpScoreHome {
           justify-content: flex-end;
         }
 
-        .gdpTeamInfo {
+        .gdpScoreTeam span {
           min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .gdpBroadcastTeam.home .gdpTeamInfo {
-          align-items: flex-end;
-        }
-
-        .gdpTeamSide {
-          color: rgba(255, 255, 255, 0.42);
-          font-size: 7px;
-          line-height: 1;
-          font-weight: 900;
-          letter-spacing: 0.1em;
-        }
-
-        .gdpTeamInfo strong {
-          max-width: 125px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: rgba(255, 255, 255, 0.78);
+          color: rgba(255, 255, 255, 0.68);
           font-size: 10px;
-          line-height: 1.1;
           font-weight: 750;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
         }
 
-        .gdpBroadcastTeam > b {
-          min-width: 23px;
+        .gdpScoreTeam strong {
+          flex: 0 0 auto;
           font-size: 23px;
           line-height: 1;
           font-weight: 900;
-          text-align: center;
         }
 
-        .gdpBroadcastInning {
-          width: 52px;
-          min-width: 52px;
+        .gdpScoreInning {
+          width: 54px;
+          min-width: 54px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           padding: 5px 3px;
           box-sizing: border-box;
-          border-radius: 8px;
-          background: rgba(255, 255, 255, 0.075);
+          border-radius: 9px;
+          background: rgba(255, 255, 255, 0.08);
         }
 
-        .gdpBroadcastInning span {
-          color: rgba(255, 255, 255, 0.45);
-          font-size: 7px;
+        .gdpScoreInning span {
+          color: rgba(255, 255, 255, 0.55);
+          font-size: 8px;
           line-height: 1;
-          font-weight: 900;
-          letter-spacing: 0.1em;
+          font-weight: 850;
+          letter-spacing: 0.08em;
         }
 
-        .gdpBroadcastInning strong {
+        .gdpScoreInning strong {
           margin-top: 3px;
           font-size: 17px;
           line-height: 1;
           font-weight: 900;
         }
 
-        /* Count */
-        .gdpBroadcastCount {
+        .gdpCount {
           display: flex;
           align-items: center;
           gap: 7px;
-          padding: 7px 8px;
-          border: 1px solid rgba(255, 255, 255, 0.09);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, 0.035);
+          padding: 7px 9px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 9px;
+          background: rgba(255, 255, 255, 0.045);
         }
 
-        .gdpBroadcastCount div {
+        .gdpCount div {
           display: flex;
           align-items: center;
           gap: 3px;
         }
 
-        .gdpBroadcastCount span {
-          color: rgba(255, 255, 255, 0.4);
-          font-size: 7px;
-          font-weight: 900;
+        .gdpCount span {
+          color: rgba(255, 255, 255, 0.48);
+          font-size: 8px;
+          font-weight: 850;
         }
 
-        .gdpBroadcastCount b {
-          min-width: 11px;
+        .gdpCount strong {
+          min-width: 12px;
           color: white;
-          font-size: 10px;
+          font-size: 11px;
           line-height: 1;
           font-weight: 900;
           text-align: center;
         }
 
-        /* Base diamond */
-        .gdpBroadcastDiamond {
+        .gdpDiamond {
           position: relative;
-          width: 42px;
-          height: 42px;
+          width: 48px;
+          height: 48px;
         }
 
-        .gdpBroadcastDiamond .base {
+        .gdpBase {
           position: absolute;
-          width: 11px;
-          height: 11px;
+          width: 13px;
+          height: 13px;
           box-sizing: border-box;
           transform: rotate(45deg);
-          border: 1.4px solid rgba(255, 255, 255, 0.48);
+          border: 1.5px solid rgba(255, 255, 255, 0.55);
           border-radius: 2px;
-          background: rgba(255, 255, 255, 0.06);
+          background: rgba(255, 255, 255, 0.07);
         }
 
-        .gdpBroadcastDiamond .base.occupied {
+        .gdpBase.occupied {
           border-color: white;
           background: #ef4444;
-          box-shadow:
-            0 0 8px rgba(239, 68, 68, 0.6),
-            0 0 14px rgba(239, 68, 68, 0.25);
+          box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
         }
 
-        .gdpBroadcastDiamond .second {
+        .gdpSecond {
           top: 1px;
-          left: 15px;
+          left: 17px;
         }
 
-        .gdpBroadcastDiamond .first {
-          top: 16px;
+        .gdpFirst {
+          top: 18px;
           right: 0;
         }
 
-        .gdpBroadcastDiamond .third {
-          top: 16px;
+        .gdpThird {
+          top: 18px;
           left: 0;
         }
 
-        .gdpBroadcastDiamond .home {
+        .gdpHome {
           bottom: 0;
-          left: 15px;
-          background: rgba(255, 255, 255, 0.1);
+          left: 17px;
+          background: rgba(255, 255, 255, 0.12);
         }
 
-        /* Fullscreen */
-        .gdpFullscreen {
+        .gdpStreamTopControls {
           position: absolute;
-          top: 14px;
-          right: 14px;
-          z-index: 10;
-          width: 35px;
-          height: 35px;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 6;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px;
+          pointer-events: none;
+          background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.45),
+            transparent
+          );
+        }
+
+        .gdpStreamBrand {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          color: rgba(255, 255, 255, 0.78);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+        }
+
+        .gdpBrandMark {
+          width: 22px;
+          height: 22px;
           display: grid;
           place-items: center;
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          border-radius: 9px;
-          background: rgba(3, 5, 8, 0.68);
+          border-radius: 7px;
+          background: rgba(255, 255, 255, 0.1);
           color: white;
-          font-size: 19px;
-          line-height: 1;
-          cursor: pointer;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          font-size: 11px;
+          font-weight: 900;
         }
 
-        .gdpFullscreen:active {
+        .gdpFullscreenButton {
+          pointer-events: auto;
+          width: 36px;
+          height: 36px;
+          display: grid;
+          place-items: center;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 10px;
+          background: rgba(0, 0, 0, 0.45);
+          color: white;
+          font-size: 20px;
+          line-height: 1;
+          cursor: pointer;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+
+        .gdpFullscreenButton:active {
           transform: scale(0.95);
         }
 
-        /* Bottom controls */
-        .gdpStreamControls {
+        .gdpStreamBottom {
           position: absolute;
           left: 0;
           right: 0;
           bottom: 0;
-          z-index: 9;
+          z-index: 6;
           display: flex;
           align-items: flex-end;
           justify-content: space-between;
-          gap: 14px;
-          padding: 34px 14px 13px;
+          gap: 12px;
+          padding: 34px 14px 14px;
+          background: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.76),
+            rgba(0, 0, 0, 0)
+          );
           box-sizing: border-box;
-          background:
-            linear-gradient(
-              to top,
-              rgba(0, 0, 0, 0.82),
-              rgba(0, 0, 0, 0)
-            );
         }
 
-        .gdpStreamStatus {
+        .gdpConnection {
           min-width: 0;
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 9px;
           color: white;
         }
 
-        .gdpStreamStatus > span {
-          width: 7px;
-          height: 7px;
+        .gdpConnection > span {
+          width: 8px;
+          height: 8px;
           flex: 0 0 auto;
           border-radius: 50%;
           background: rgba(255, 255, 255, 0.3);
         }
 
-        .gdpStreamStatus > span.online {
+        .gdpConnection > span.connected {
           background: #35d07f;
-          box-shadow: 0 0 0 4px rgba(53, 208, 127, 0.1);
+          box-shadow: 0 0 0 4px rgba(53, 208, 127, 0.12);
         }
 
-        .gdpStreamStatus div {
+        .gdpConnection div {
           min-width: 0;
           display: flex;
           flex-direction: column;
           gap: 2px;
         }
 
-        .gdpStreamStatus strong {
+        .gdpConnection strong {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 800;
         }
 
-        .gdpStreamStatus small {
+        .gdpConnection small {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: rgba(255, 255, 255, 0.43);
-          font-size: 8px;
+          color: rgba(255, 255, 255, 0.52);
+          font-size: 9px;
         }
 
-        .gdpStreamAction {
+        .gdpStreamButton {
           pointer-events: auto;
-          min-height: 38px;
+          min-height: 40px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 7px;
-          padding: 0 14px;
+          gap: 8px;
+          padding: 0 15px;
           border: 1px solid rgba(255, 255, 255, 0.14);
-          border-radius: 9px;
+          border-radius: 10px;
           color: white;
-          font-size: 10px;
-          font-weight: 850;
+          font-size: 11px;
+          font-weight: 800;
           cursor: pointer;
-          box-shadow: 0 7px 20px rgba(0, 0, 0, 0.25);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
         }
 
-        .gdpStreamAction.start {
-          background: #7c3aed;
-          border-color: rgba(196, 181, 253, 0.4);
+        .gdpStreamButton.start {
+          background: rgba(124, 58, 237, 0.95);
+          border-color: rgba(167, 139, 250, 0.45);
         }
 
-        .gdpStreamAction.disconnect {
-          background: rgba(126, 25, 25, 0.92);
-          border-color: rgba(255, 130, 130, 0.22);
+        .gdpStreamButton.disconnect {
+          background: rgba(120, 20, 20, 0.88);
+          border-color: rgba(255, 120, 120, 0.22);
         }
 
-        .gdpStreamAction:active {
+        .gdpStreamButton:active {
           transform: translateY(1px);
         }
 
-        .actionIcon {
-          font-size: 8px;
+        .gdpButtonIcon {
+          font-size: 9px;
         }
 
-        /* Mobile */
+        .gdpStreamStage:fullscreen .gdpScoreBug {
+          top: max(14px, env(safe-area-inset-top));
+        }
+
+        .gdpStreamStage:fullscreen .gdpStreamBottom {
+          padding-bottom: max(14px, env(safe-area-inset-bottom));
+        }
+
         @media (max-width: 700px) {
           .gdpStream {
-            border-radius: 11px;
+            border-radius: 12px;
           }
 
           .gdpStreamStage {
             min-height: 240px;
           }
 
-          .gdpBroadcastScorebug {
-            top: 10px;
-            width: calc(100% - 82px);
-            min-height: 48px;
+          .gdpScoreBug {
+            width: calc(100% - 20px);
             grid-template-columns:
               minmax(0, 1fr)
-              43px
+              44px
               minmax(0, 1fr);
             gap: 5px;
-            padding: 5px 6px;
+            padding: 6px;
+            min-height: 48px;
           }
 
-          .gdpBroadcastTeam {
+          .gdpScoreTeam {
             gap: 5px;
           }
 
-          .gdpTeamInfo strong {
-            max-width: 62px;
+          .gdpScoreTeam span {
+            max-width: 70px;
             font-size: 8px;
           }
 
-          .gdpTeamSide {
-            font-size: 6px;
-          }
-
-          .gdpBroadcastTeam > b {
-            min-width: 19px;
+          .gdpScoreTeam strong {
             font-size: 19px;
           }
 
-          .gdpBroadcastInning {
-            width: 43px;
-            min-width: 43px;
+          .gdpScoreInning {
+            width: 44px;
+            min-width: 44px;
           }
 
-          .gdpBroadcastInning strong {
+          .gdpScoreInning strong {
             font-size: 15px;
           }
 
-          .gdpBroadcastCount {
+          .gdpCount {
             grid-column: 1 / 2;
             justify-self: start;
-            padding: 5px 6px;
-            gap: 5px;
+            padding: 5px 7px;
           }
 
-          .gdpBroadcastDiamond {
+          .gdpDiamond {
             grid-column: 3 / 4;
             justify-self: end;
             transform: scale(0.82);
             transform-origin: right center;
           }
 
-          .gdpLiveBadge {
-            top: 9px;
-            left: 9px;
-          }
-
-          .gdpFullscreen {
-            top: 9px;
-            right: 9px;
-          }
-
-          .gdpStreamControls {
-            padding: 28px 9px 9px;
-          }
-
-          .gdpStreamStatus small {
+          .gdpStreamBrand {
             display: none;
           }
 
-          .gdpStreamAction {
-            min-height: 37px;
-            padding: 0 11px;
+          .gdpLivePill {
+            top: 10px;
+            left: 10px;
+          }
+
+          .gdpStreamTopControls {
+            padding: 10px;
+            justify-content: flex-end;
+          }
+
+          .gdpStreamBottom {
+            padding: 28px 10px 10px;
+          }
+
+          .gdpConnection small {
+            display: none;
+          }
+
+          .gdpStreamButton {
+            min-height: 38px;
+            padding: 0 12px;
           }
         }
 
-        /* Portrait phone */
         @media (orientation: portrait) and (max-width: 600px) {
           .gdpStreamStage {
             aspect-ratio: 9 / 16;
-            min-height: 500px;
+            min-height: 520px;
           }
 
           .gdpStreamStage :global(.gdpStreamVideo) {
             object-fit: contain;
           }
 
-          .gdpBroadcastScorebug {
-            top: 45px;
-            width: calc(100% - 14px);
+          .gdpScoreBug {
+            top: 48px;
+            grid-template-columns:
+              minmax(0, 1fr)
+              42px
+              minmax(0, 1fr);
+            width: calc(100% - 16px);
           }
 
-          .gdpTeamInfo strong {
-            max-width: 55px;
+          .gdpScoreTeam span {
+            max-width: 58px;
           }
 
-          .gdpBroadcastDiamond {
-            transform: scale(0.75);
-          }
-        }
-
-        /* Short landscape phone */
-        @media (orientation: landscape) and (max-height: 600px) {
-          .gdpStreamStage {
-            min-height: 210px;
-            aspect-ratio: 16 / 9;
-          }
-
-          .gdpBroadcastScorebug {
-            top: 7px;
-            width: min(760px, calc(100% - 80px));
-            min-height: 44px;
-          }
-
-          .gdpBroadcastTeam > b {
+          .gdpScoreTeam strong {
             font-size: 18px;
           }
 
-          .gdpTeamInfo strong {
-            max-width: 95px;
+          .gdpCount {
+            margin-top: 2px;
           }
 
-          .gdpBroadcastDiamond {
+          .gdpDiamond {
             transform: scale(0.76);
           }
+        }
 
-          .gdpStreamControls {
-            padding: 23px 9px 7px;
+        @media (orientation: landscape) and (max-height: 600px) {
+          .gdpStreamStage {
+            min-height: 220px;
+            aspect-ratio: 16 / 9;
+          }
+
+          .gdpScoreBug {
+            top: 8px;
+            width: min(760px, calc(100% - 90px));
+            min-height: 46px;
+          }
+
+          .gdpScoreTeam strong {
+            font-size: 18px;
+          }
+
+          .gdpScoreTeam span {
+            max-width: 100px;
+          }
+
+          .gdpCount {
+            padding: 5px 7px;
+          }
+
+          .gdpDiamond {
+            transform: scale(0.78);
+          }
+
+          .gdpStreamBottom {
+            padding: 24px 10px 8px;
           }
         }
 
-        /* Fullscreen safe areas */
-        .gdpStreamStage:fullscreen .gdpBroadcastScorebug {
-          top: max(12px, env(safe-area-inset-top));
-        }
+        @media (orientation: portrait) and (min-width: 601px) {
+          .gdpStreamStage:fullscreen {
+            aspect-ratio: auto;
+          }
 
-        .gdpStreamStage:fullscreen .gdpFullscreen {
-          top: max(12px, env(safe-area-inset-top));
-          right: max(12px, env(safe-area-inset-right));
-        }
-
-        .gdpStreamStage:fullscreen .gdpStreamControls {
-          padding-bottom: max(13px, env(safe-area-inset-bottom));
-          padding-left: max(13px, env(safe-area-inset-left));
-          padding-right: max(13px, env(safe-area-inset-right));
-        }
-
-        @media (orientation: portrait) and (max-width: 600px) {
-          .gdpStreamStage:fullscreen .gdpStreamVideo {
+          .gdpStreamStage:fullscreen :global(.gdpStreamVideo) {
             object-fit: contain;
-          }
-
-          .gdpStreamStage:fullscreen .gdpBroadcastScorebug {
-            top: max(46px, env(safe-area-inset-top));
           }
         }
       `}</style>
