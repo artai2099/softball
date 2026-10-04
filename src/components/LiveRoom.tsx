@@ -15,6 +15,7 @@ export function LiveRoom({
 }) {
   const [status, setStatus] = useState("Ready");
   const [active, setActive] = useState(false);
+  const [muted, setMuted] = useState(false);
   const roomRef = useRef<Room | null>(null);
   const mediaRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +81,10 @@ export function LiveRoom({
           element.classList.add("gdpStreamVideo");
         } else {
           element.classList.add("gdpStreamAudio");
+
+          if (element instanceof HTMLMediaElement) {
+            element.muted = muted;
+          }
         }
 
         mediaRef.current?.appendChild(element);
@@ -144,6 +149,10 @@ export function LiveRoom({
           element.classList.add("gdpStreamVideo");
         } else {
           element.classList.add("gdpStreamAudio");
+
+          if (element instanceof HTMLMediaElement) {
+            element.muted = muted;
+          }
         }
 
         mediaRef.current?.appendChild(element);
@@ -180,6 +189,19 @@ export function LiveRoom({
         error instanceof Error ? error.message : "Video failed"
       );
     }
+  }
+
+  async function toggleMute() {
+    const nextMuted = !muted;
+    setMuted(nextMuted);
+
+    if (role === "broadcaster") {
+      await roomRef.current?.localParticipant.setMicrophoneEnabled(!nextMuted);
+    }
+
+    mediaRef.current?.querySelectorAll("audio").forEach((element) => {
+      element.muted = nextMuted;
+    });
   }
 
   async function fullscreen() {
@@ -291,15 +313,27 @@ export function LiveRoom({
           </div>
 
           {active && (
-            <button
-              type="button"
-              className="gdpFullscreenButton"
-              onClick={fullscreen}
-              aria-label="Enter fullscreen"
-              title="Fullscreen"
-            >
-              ⛶
-            </button>
+            <div className="gdpStreamTopActions">
+              <button
+                type="button"
+                className="gdpAudioButton"
+                onClick={() => void toggleMute()}
+                aria-label={muted ? "Unmute audio" : "Mute audio"}
+                title={muted ? "Unmute audio" : "Mute audio"}
+              >
+                {muted ? "🔇" : "🔊"}
+              </button>
+
+              <button
+                type="button"
+                className="gdpFullscreenButton"
+                onClick={fullscreen}
+                aria-label="Enter fullscreen"
+                title="Fullscreen"
+              >
+                ⛶
+              </button>
+            </div>
           )}
         </div>
 
@@ -666,6 +700,33 @@ export function LiveRoom({
           color: white;
           font-size: 11px;
           font-weight: 900;
+        }
+
+        .gdpStreamTopActions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .gdpAudioButton {
+          width: 38px;
+          height: 38px;
+          display: grid;
+          place-items: center;
+          padding: 0;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 10px;
+          background: rgba(8, 10, 14, 0.72);
+          color: #fff;
+          font-size: 17px;
+          line-height: 1;
+          cursor: pointer;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+
+        .gdpAudioButton:active {
+          transform: scale(0.96);
         }
 
         .gdpFullscreenButton {
