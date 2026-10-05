@@ -192,16 +192,43 @@ export function LiveRoom({
   }
 
   async function toggleMute() {
-    const nextMuted = !muted;
-    setMuted(nextMuted);
+    const room = roomRef.current;
 
-    if (role === "broadcaster") {
-      await roomRef.current?.localParticipant.setMicrophoneEnabled(!nextMuted);
+    if (!room || !active) {
+      return;
     }
 
-    mediaRef.current?.querySelectorAll("audio").forEach((element) => {
-      element.muted = nextMuted;
-    });
+    const nextMuted = !muted;
+
+    try {
+      if (role === "broadcaster") {
+        // This is the actual LiveKit microphone control.
+        await room.localParticipant.setMicrophoneEnabled(!nextMuted);
+      }
+
+      // For viewers this controls the locally received audio.
+      // For broadcasters it also keeps the locally attached audio
+      // element consistent with the microphone state.
+      mediaRef.current?.querySelectorAll("audio").forEach((element) => {
+        element.muted = nextMuted;
+      });
+
+      setMuted(nextMuted);
+
+      setStatus(
+        nextMuted
+          ? "Microphone muted"
+          : role === "broadcaster"
+            ? "Microphone live"
+            : "Audio on"
+      );
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Unable to change microphone"
+      );
+    }
   }
 
   async function fullscreen() {

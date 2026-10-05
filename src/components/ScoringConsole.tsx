@@ -118,6 +118,25 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
         </div>
       </section>
 
+      <section className="cameraPanel">
+        <div className="cameraPanelHead">
+          <div className="cameraPanelSpacer" aria-hidden="true" />
+          <details className="cameraDetails">
+            <summary className="gameCameraButton">
+  <span className="gameCameraIcon" aria-hidden="true">🎥</span>
+  <span>Watch Live or Record Game</span>
+</summary>
+            <div className="cameraDetailsBody">
+              <LiveRoom
+                gameId={game.id}
+                role={canScore ? "broadcaster" : "viewer"}
+                game={game}
+              />
+            </div>
+          </details>
+        </div>
+      </section>
+
       <div className="liveGrid">
 
         <main>
@@ -418,30 +437,17 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
           )}
 
 
-          <PlayFeed events={events}/>
+
 
         </aside>
 
       </div>
 
-      <section className="cameraPanel">
-        <div className="cameraPanelHead">
-          <div>
-            <div className="liveLabel">Game camera</div>
-            <strong>Live video</strong>
-            <span>Optional while scoring</span>
-          </div>
-          <details className="cameraDetails">
-            <summary>Open camera</summary>
-            <div className="cameraDetailsBody">
-              <LiveRoom
-                gameId={game.id}
-                role={canScore ? "broadcaster" : "viewer"}
-              />
-            </div>
-          </details>
-        </div>
+      <section className="playFeedBottom">
+        <PlayFeed events={events}/>
       </section>
+
+
 
     </div>
   );
