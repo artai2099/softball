@@ -35,18 +35,20 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       }));
 
   useEffect(() => {
-    if (game.half !== "bottom" || scoringPlayers.length === 0) {
+    if (game.half !== "bottom") {
+      if (batterId !== null) {
+        setBatterId(null);
+      }
+      return;
+    }
+
+    if (scoringPlayers.length === 0) {
       return;
     }
 
     const ordered = [...scoringPlayers]
-      .filter((player) => player.active)
-      .sort((a, b) => {
-        if (a.batting_order == null && b.batting_order == null) return 0;
-        if (a.batting_order == null) return 1;
-        if (b.batting_order == null) return -1;
-        return a.batting_order - b.batting_order;
-      });
+      .filter((player) => player.active && player.batting_order != null)
+      .sort((a, b) => (a.batting_order ?? 0) - (b.batting_order ?? 0));
 
     const nextBatter = game.current_batter_id || ordered[0]?.player_id || null;
 
@@ -59,10 +61,13 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
   useEffect(()=>{ if(!game.home_team_id)return; void supabase.from("players").select("id,first_name,last_name,jersey_number").eq("team_id",game.home_team_id).eq("active",true).order("jersey_number").then(({data})=>setPlayers(data||[])); },[game.home_team_id,supabase]);
 
   const required=pending==="error"||pending==="out"?1:pending==="double_play"?2:pending==="triple_play"?3:0;
-  const activeBatter=scoringPlayers.find(p=>p.player_id===batterId);
+  const activeBatter =
+    game.half === "bottom"
+      ? scoringPlayers.find(p => p.player_id === batterId)
+      : undefined;
   async function record(result:string,selected:string[]=[]) {
     setSaving(true);setMessage("");
-    const details={...(result==="error"?{error_position:selected[0]}:Object.fromEntries(selected.map((position,index)=>[`out_position_${index+1}`,position]))),...(batterId?{batter_id:batterId}:{})};
+    const details={...(result==="error"?{error_position:selected[0]}:Object.fromEntries(selected.map((position,index)=>[`out_position_${index+1}`,position]))),...(game.half==="bottom"&&batterId?{batter_id:batterId}:{})};
     try{const controller=new AbortController();
       const timeout=window.setTimeout(()=>controller.abort(),10000);
       let response:Response;
