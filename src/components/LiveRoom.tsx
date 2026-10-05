@@ -193,40 +193,15 @@ export function LiveRoom({
 
   async function toggleMute() {
     const nextMuted = !muted;
+    setMuted(nextMuted);
 
-    try {
-      if (role === "broadcaster") {
-        const participant = roomRef.current?.localParticipant;
-
-        if (!participant) {
-          setStatus("Camera is not connected");
-          return;
-        }
-
-        // This is the actual LiveKit microphone control.
-        await participant.setMicrophoneEnabled(!nextMuted);
-      }
-
-      // Also control any audio elements currently attached to the stream.
-      mediaRef.current?.querySelectorAll("audio").forEach((element) => {
-        element.muted = nextMuted;
-      });
-
-      setMuted(nextMuted);
-      setStatus(
-        nextMuted
-          ? "Microphone muted"
-          : role === "broadcaster"
-            ? "Microphone live"
-            : "Audio on"
-      );
-    } catch (error) {
-      setStatus(
-        error instanceof Error
-          ? error.message
-          : "Unable to change microphone"
-      );
+    if (role === "broadcaster") {
+      await roomRef.current?.localParticipant.setMicrophoneEnabled(!nextMuted);
     }
+
+    mediaRef.current?.querySelectorAll("audio").forEach((element) => {
+      element.muted = nextMuted;
+    });
   }
 
   async function fullscreen() {
@@ -341,12 +316,12 @@ export function LiveRoom({
             <div className="gdpStreamTopActions">
               <button
                 type="button"
-                className={`gdpAudioButton ${muted ? "muted" : ""}`}
-                onClick={toggleMute}
-                aria-label={muted ? "Unmute microphone" : "Mute microphone"}
-                title={muted ? "Unmute microphone" : "Mute microphone"}
+                className="gdpAudioButton"
+                onClick={() => void toggleMute()}
+                aria-label={muted ? "Unmute audio" : "Mute audio"}
+                title={muted ? "Unmute audio" : "Mute audio"}
               >
-                <span aria-hidden="true">{muted ? "🔇" : "🎙️"}</span>
+                {muted ? "🔇" : "🔊"}
               </button>
 
               <button
@@ -752,11 +727,6 @@ export function LiveRoom({
 
         .gdpAudioButton:active {
           transform: scale(0.96);
-        }
-
-        .gdpAudioButton.muted {
-          background: rgba(180, 30, 30, 0.82);
-          border-color: rgba(255, 255, 255, 0.28);
         }
 
         .gdpFullscreenButton {
