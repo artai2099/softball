@@ -13,6 +13,8 @@ const labels: Record<string,string> = { ball:"Ball",strike:"Strike",foul:"Foul",
 export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScore }: { initialGame: Game;initialEvents:GameEvent[];initialLineup:GameLineupPlayerView[];canScore:boolean }) {
   const [game,setGame]=useState(initialGame); const [events,setEvents]=useState(initialEvents);
   const [pending,setPending]=useState<string|null>(null); const [positions,setPositions]=useState<string[]>([]);
+  const [selectedRunnerBase,setSelectedRunnerBase]=useState<"1"|"2"|"3"|null>(null);
+  const [selectedFieldPosition,setSelectedFieldPosition]=useState<"LF"|"CF"|"RF"|null>(null);
   const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
   const [message,setMessage]=useState(""); const [saving,setSaving]=useState(false);
   const supabase=useMemo(()=>createClient(),[]);
@@ -95,14 +97,6 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
     <div className="livePage">
 
       <section className="scorekeeperTop">
-        <div className="scorekeeperTitle">
-          <div>
-            <div className="liveLabel">{game.status === "live" ? "LIVE SCOREKEEPER" : game.status.toUpperCase()}</div>
-            <h1>{game.away_name} <span>@</span> {game.home_name}</h1>
-            <p>{game.venue || "GameDay Field"} · {game.innings_scheduled} inning game</p>
-          </div>
-          <a className="button secondary" href="/dashboard/games">Games</a>
-        </div>
 
         <div className="scorekeeperScore">
           <div className="scoreTeam">
@@ -127,7 +121,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       <section className="cameraPanel">
         <div className="cameraPanelHead">
           <div className="cameraPanelSpacer" aria-hidden="true" />
-          <details className="cameraDetails">
+          <details className="cameraDetails" open>
             <summary className="gameCameraButton">
   <span className="gameCameraIcon" aria-hidden="true">🎥</span>
   <span>Watch Live or Record Game</span>
@@ -340,38 +334,138 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
               Base runners
             </div>
 
-            <div className="diamond">
+            <div className="baseOnlyField">
 
-              <div
-                className={`baseNode home ${
-                  game.bases?.["1"] ? "on" : ""
+              <div className="baseDirt"></div>
+
+              <button
+                type="button"
+                className={`fieldZone leftField ${
+                  selectedFieldPosition === "LF" ? "selected" : ""
                 }`}
+                aria-label="Left field"
+                aria-pressed={selectedFieldPosition === "LF"}
+                onClick={() => setSelectedFieldPosition("LF")}
               >
-                <span>1B</span>
-              </div>
+                LF
+              </button>
 
-              <div
-                className={`baseNode second ${
-                  game.bases?.["2"] ? "on" : ""
+              <button
+                type="button"
+                className={`fieldZone centerField ${
+                  selectedFieldPosition === "CF" ? "selected" : ""
                 }`}
+                aria-label="Center field"
+                aria-pressed={selectedFieldPosition === "CF"}
+                onClick={() => setSelectedFieldPosition("CF")}
               >
-                <span>2B</span>
-              </div>
+                CF
+              </button>
 
-              <div
-                className={`baseNode third ${
-                  game.bases?.["3"] ? "on" : ""
+              <button
+                type="button"
+                className={`fieldZone rightField ${
+                  selectedFieldPosition === "RF" ? "selected" : ""
                 }`}
+                aria-label="Right field"
+                aria-pressed={selectedFieldPosition === "RF"}
+                onClick={() => setSelectedFieldPosition("RF")}
               >
-                <span>3B</span>
-              </div>
+                RF
+              </button>
 
-              <div className="baseNode plate">
-                <span>HP</span>
-              </div>
+
+              {(["2","3","1"] as const).map(base => {
+                const runnerId = game.bases?.[base] ?? null;
+                const runner = runnerId
+                  ? scoringPlayers.find(
+                      player => player.player_id === runnerId,
+                    )
+                  : null;
+
+                const selected = selectedRunnerBase === base;
+
+                const className =
+                  base === "2"
+                    ? "baseOnly second"
+                    : base === "3"
+                      ? "baseOnly third"
+                      : "baseOnly first";
+
+                return (
+                  <button
+                    key={base}
+                    type="button"
+                    className={`${className} ${
+                      runnerId ? "occupied" : ""
+                    } ${selected ? "selected" : ""}`}
+                    aria-label={
+                      runner
+                        ? `${base}B runner #${runner.jersey_number}`
+                        : `${base}B empty`
+                    }
+                    onClick={() =>
+                      runnerId
+                        ? setSelectedRunnerBase(base)
+                        : setSelectedRunnerBase(null)
+                    }
+                  >
+                    {runner
+                      ? `#${runner.jersey_number}`
+                      : `${base}B`}
+                  </button>
+                );
+              })}
+
+              <button
+                type="button"
+                className="baseOnly home"
+                aria-label="Home plate"
+                onClick={() => setSelectedRunnerBase(null)}
+              >
+                HP
+              </button>
 
             </div>
 
+            {selectedRunnerBase && game.bases?.[selectedRunnerBase] && (() => {
+              const runnerId = game.bases[selectedRunnerBase];
+              const runner = scoringPlayers.find(
+                player => player.player_id === runnerId,
+              );
+
+              if (!runner) return null;
+
+              return (
+                <div className="selectedBaseRunner">
+                  <span>
+                    {selectedRunnerBase}B · #{runner.jersey_number} {runner.first_name} {runner.last_name}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRunnerBase(null)}
+                  >
+                    Clear
+                  </button>
+                </div>
+              );
+            })()}
+
+            {selectedFieldPosition && (
+              <div className="selectedFieldPositionNotice">
+                <span>
+                  FIELD POSITION · {selectedFieldPosition}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedFieldPosition(null)}
+                >
+                  Clear
+                </button>
+              </div>
+            )}
 
             <div className="runnerLegend">
               {(["1","2","3"] as const).map(base => {

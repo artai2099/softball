@@ -3717,3 +3717,1056 @@
   font-size: 40px !important;
   font-weight: 950 !important;
 }
+
+/* Expandable substitution panel */
+.substitutionDetails {
+  width: 100%;
+}
+
+.substitutionSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  min-height: 34px;
+  user-select: none;
+}
+
+.substitutionSummary::-webkit-details-marker {
+  display: none;
+}
+
+.substitutionSummary::after {
+  content: "+";
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #ffffff26;
+  border-radius: 6px;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.substitutionDetails[open] .substitutionSummary::after {
+  content: "−";
+}
+
+.substitutionSummaryHint {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.substitutionBody {
+  padding-top: 12px;
+}
+
+.substitutionDetails:not([open]) .substitutionSummaryHint {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .substitutionSummaryHint {
+    font-size: 10px;
+  }
+}
+
+
+/* =========================================================
+   REAL SOFTBALL FIELD — BASE RUNNERS
+   ========================================================= */
+
+.fieldDiagram {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  margin: 10px auto 4px;
+  overflow: hidden;
+  border: 1px solid #ffffff18;
+  border-radius: 14px;
+  background:
+    radial-gradient(
+      ellipse 90% 70% at 50% 2%,
+      #1b5738 0%,
+      #12442d 42%,
+      #0b3021 72%,
+      #08251a 100%
+    );
+  box-shadow:
+    inset 0 1px 0 #ffffff0d,
+    inset 0 -18px 35px #00000025;
+}
+
+/* Curved outfield fence */
+.fieldDiagram::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -145px;
+  width: 470px;
+  height: 300px;
+  transform: translateX(-50%);
+  border: 2px solid #a9d7bb55;
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0;
+  box-shadow:
+    0 0 0 18px #ffffff04,
+    inset 0 0 35px #00000012;
+  pointer-events: none;
+}
+
+/* Infield dirt */
+.fieldDiagram::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 57%;
+  width: 205px;
+  height: 205px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 7px;
+  background:
+    linear-gradient(
+      135deg,
+      #846744 0%,
+      #765a3b 48%,
+      #684e33 100%
+    );
+  border: 1px solid #b79b7050;
+  box-shadow:
+    inset 0 0 0 7px #5a432d22,
+    inset 0 0 0 8px #ac8d6240;
+  pointer-events: none;
+}
+
+/* Defensive positions */
+.fieldPosition {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid #ffffff30;
+  border-radius: 5px;
+  background: #071d16dd;
+  color: #dcefe6;
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 5px #00000030;
+}
+
+/* Outfield */
+.fieldPosition.lf {
+  left: 10%;
+  top: 25%;
+}
+
+.fieldPosition.cf {
+  left: 50%;
+  top: 13%;
+  transform: translateX(-50%);
+}
+
+.fieldPosition.rf {
+  right: 10%;
+  top: 25%;
+}
+
+/* Infield */
+.fieldPosition.ss {
+  left: 28%;
+  top: 50%;
+}
+
+.fieldPosition.secondFielder {
+  right: 28%;
+  top: 50%;
+}
+
+.fieldPosition.pitcher {
+  left: 50%;
+  top: 55%;
+  transform: translateX(-50%);
+}
+
+.fieldPosition.firstFielder {
+  right: 18%;
+  top: 64%;
+}
+
+.fieldPosition.thirdFielder {
+  left: 18%;
+  top: 64%;
+}
+
+/* Base markers */
+.fieldBase {
+  position: absolute;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  padding: 0;
+  border: 2px solid #ffffffd9;
+  border-radius: 2px;
+  background: #f7fafc;
+  color: #15233a;
+  font-size: 7px;
+  font-weight: 950;
+  transform: rotate(45deg);
+  box-shadow: 0 2px 7px #00000035;
+}
+
+.fieldBase span {
+  transform: rotate(-45deg);
+}
+
+.fieldBase.on {
+  width: 40px;
+  height: 40px;
+  border-color: #ffffff;
+  background: #7c3cff;
+  color: #ffffff;
+  box-shadow:
+    0 0 0 3px #7c3cff40,
+    0 3px 10px #00000045;
+}
+
+.fieldBase.firstBase {
+  right: 27%;
+  bottom: 25%;
+}
+
+.fieldBase.secondBase {
+  left: 50%;
+  bottom: 45%;
+  margin-left: -14.5px;
+}
+
+.fieldBase.thirdBase {
+  left: 27%;
+  bottom: 25%;
+}
+
+.fieldBase.homePlate {
+  left: 50%;
+  bottom: 7%;
+  width: 25px;
+  height: 25px;
+  margin-left: -12.5px;
+  border-radius: 2px 2px 7px 2px;
+}
+
+/* Keep the field compact on phones */
+@media (max-width: 700px) {
+  .fieldDiagram {
+    height: 265px;
+  }
+
+  .fieldDiagram::before {
+    width: 410px;
+    height: 270px;
+    top: -135px;
+  }
+
+  .fieldDiagram::after {
+    width: 180px;
+    height: 180px;
+  }
+
+  .fieldPosition {
+    min-width: 31px;
+    height: 21px;
+    font-size: 7px;
+  }
+
+  .fieldBase {
+    width: 27px;
+    height: 27px;
+  }
+
+  .fieldBase.on {
+    width: 37px;
+    height: 37px;
+  }
+}
+
+
+/* Outfield */
+.fieldPosition {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 28px;
+  border: 1px solid #ffffff35;
+  border-radius: 6px;
+  background: #102b23cc;
+  color: #d9eee5;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  z-index: 2;
+}
+
+.fieldPosition.lf {
+  left: 12%;
+  top: 24%;
+}
+
+.fieldPosition.cf {
+  left: calc(50% - 22px);
+  top: 13%;
+}
+
+.fieldPosition.rf {
+  right: 12%;
+  top: 24%;
+}
+
+/* Infield defensive positions */
+.fieldPosition.ss {
+  left: 31%;
+  top: 48%;
+}
+
+.fieldPosition.secondFielder {
+  right: 31%;
+  top: 48%;
+}
+
+.fieldPosition.pitcher {
+  left: calc(50% - 22px);
+  top: 56%;
+}
+
+.fieldPosition.firstFielder {
+  right: 22%;
+  top: 66%;
+}
+
+.fieldPosition.thirdFielder {
+  left: 22%;
+  top: 66%;
+}
+
+/* Infield dirt */
+.fieldDiagram::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  width: 220px;
+  height: 170px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1px solid #d9c5a044;
+  background: #6e583544;
+  border-radius: 8px;
+}
+
+/* Bases / runners */
+.fieldBase {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 2px solid #ffffffaa;
+  background: #eef4f8;
+  color: #15233a;
+  font-size: 10px;
+  font-weight: 950;
+  transform: rotate(45deg);
+}
+
+.fieldBase span {
+  transform: rotate(-45deg);
+}
+
+.fieldBase.on {
+  background: #7c3cff;
+  border-color: #ffffff;
+  color: #fff;
+  box-shadow: 0 0 0 4px #7c3cff33;
+}
+
+.fieldBase.firstBase {
+  right: 29%;
+  bottom: 25%;
+}
+
+.fieldBase.secondBase {
+  left: calc(50% - 21px);
+  bottom: 47%;
+}
+
+.fieldBase.thirdBase {
+  left: 29%;
+  bottom: 25%;
+}
+
+.fieldBase.homePlate {
+  left: calc(50% - 16px);
+  bottom: 7%;
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
+  transform: rotate(45deg);
+}
+
+@media (max-width: 700px) {
+  .fieldDiagram {
+    height: 290px;
+  }
+
+  .fieldPosition {
+    width: 40px;
+    height: 26px;
+    font-size: 9px;
+  }
+
+  .fieldBase {
+    width: 38px;
+    height: 38px;
+  }
+
+  .fieldBase.homePlate {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* =========================================================
+   INTERACTIVE BASE RUNNER FIELD
+   ========================================================= */
+
+.fieldBase {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  transition:
+    transform .12s ease,
+    box-shadow .12s ease,
+    background .12s ease;
+}
+
+.fieldBase:hover {
+  transform: rotate(45deg) scale(1.06);
+}
+
+.fieldBase.selected {
+  background: #9a68ff;
+  border-color: #ffffff;
+  box-shadow:
+    0 0 0 4px #7c3cff55,
+    0 0 22px #7c3cff55;
+}
+
+.fieldBase.selected span {
+  font-size: 9px;
+}
+
+.selectedRunnerCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #7c3cff55;
+  border-radius: 8px;
+  background: #7c3cff14;
+}
+
+.selectedRunnerCard > div {
+  min-width: 0;
+}
+
+.selectedRunnerLabel {
+  display: block;
+  margin-bottom: 3px;
+  color: #a987ef;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+
+.selectedRunnerCard strong {
+  display: block;
+  overflow: hidden;
+  color: #fff;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .selectedRunnerCard {
+    padding: 9px 10px;
+  }
+
+  .selectedRunnerCard .button {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+}
+
+/* =========================================================
+   INTERACTIVE BASE RUNNER FIELD
+   ========================================================= */
+
+.fieldBase {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  transition:
+    transform .12s ease,
+    box-shadow .12s ease,
+    background .12s ease;
+}
+
+.fieldBase:hover {
+  transform: rotate(45deg) scale(1.06);
+}
+
+.fieldBase.selected {
+  background: #9a68ff;
+  border-color: #ffffff;
+  box-shadow:
+    0 0 0 4px #7c3cff55,
+    0 0 22px #7c3cff55;
+}
+
+.fieldBase.selected span {
+  font-size: 9px;
+}
+
+.selectedRunnerCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #7c3cff55;
+  border-radius: 8px;
+  background: #7c3cff14;
+}
+
+.selectedRunnerCard > div {
+  min-width: 0;
+}
+
+.selectedRunnerLabel {
+  display: block;
+  margin-bottom: 3px;
+  color: #a987ef;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+
+.selectedRunnerCard strong {
+  display: block;
+  overflow: hidden;
+  color: #fff;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .selectedRunnerCard {
+    padding: 9px 10px;
+  }
+
+  .selectedRunnerCard .button {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+}
+
+/* =========================================================
+   INTERACTIVE BASE RUNNER FIELD
+   ========================================================= */
+
+.fieldBase {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  transition:
+    transform .12s ease,
+    box-shadow .12s ease,
+    background .12s ease;
+}
+
+.fieldBase:hover {
+  transform: rotate(45deg) scale(1.06);
+}
+
+.fieldBase.selected {
+  background: #9a68ff;
+  border-color: #ffffff;
+  box-shadow:
+    0 0 0 4px #7c3cff55,
+    0 0 22px #7c3cff55;
+}
+
+.fieldBase.selected span {
+  font-size: 9px;
+}
+
+.selectedRunnerCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #7c3cff55;
+  border-radius: 8px;
+  background: #7c3cff14;
+}
+
+.selectedRunnerCard > div {
+  min-width: 0;
+}
+
+.selectedRunnerLabel {
+  display: block;
+  margin-bottom: 3px;
+  color: #a987ef;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+
+.selectedRunnerCard strong {
+  display: block;
+  overflow: hidden;
+  color: #fff;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .selectedRunnerCard {
+    padding: 9px 10px;
+  }
+
+  .selectedRunnerCard .button {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+}
+
+/* =========================================================
+   BASE RUNNER INTERACTION CONTROLS
+   ========================================================= */
+
+.runnerActionBar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.runnerBaseButton {
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid #ffffff18;
+  border-radius: 8px;
+  background: #101016;
+  color: #cfd1d8;
+  cursor: pointer;
+}
+
+.runnerBaseButton span {
+  color: #8d919d;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+
+.runnerBaseButton strong {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.runnerBaseButton:hover {
+  border-color: #7c3cff66;
+  background: #18131f;
+}
+
+.runnerBaseButton.occupied {
+  border-color: #7c3cff55;
+  background: #7c3cff12;
+}
+
+.runnerBaseButton.selected {
+  border-color: #a87aff;
+  background: #7c3cff;
+  box-shadow: 0 0 0 3px #7c3cff33;
+}
+
+.runnerBaseButton.selected span,
+.runnerBaseButton.selected strong {
+  color: #fff;
+}
+
+.runnerSelectionNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  background: #7c3cff12;
+  border: 1px solid #7c3cff44;
+  color: #d9c8ff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.runnerSelectionNotice .button {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 10px;
+}
+
+@media (max-width: 700px) {
+  .runnerBaseButton {
+    min-height: 52px;
+  }
+}
+
+
+/* =========================================================
+   PROFESSIONAL BASE RUNNER FIELD
+   ========================================================= */
+
+.baseOnlyField {
+  position: relative;
+  width: 100%;
+  height: 270px;
+  margin: 8px auto 6px;
+  overflow: hidden;
+  border: 1px solid #ffffff14;
+  border-radius: 14px;
+  background:
+    radial-gradient(
+      ellipse 115% 85% at 50% -12%,
+      #195b3b 0%,
+      #12452f 38%,
+      #0c3826 64%,
+      #09291d 100%
+    );
+  box-shadow:
+    inset 0 1px 0 #ffffff08,
+    inset 0 -28px 55px #00000018;
+}
+
+/* Soft outfield warning/fence arc */
+.baseOnlyField::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -164px;
+  width: 475px;
+  height: 295px;
+  transform: translateX(-50%);
+  border: 1px solid #cce6d455;
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0;
+  pointer-events: none;
+  opacity: .8;
+}
+
+/* White foul/base lines */
+.baseOnlyField::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  width: 1px;
+  height: 54%;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    to top,
+    #ffffff55,
+    #ffffff08
+  );
+  pointer-events: none;
+}
+
+/* Infield dirt */
+.baseDirt {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 58%;
+  width: 126px;
+  height: 126px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 6px;
+  background:
+    linear-gradient(
+      135deg,
+      #8b6a47 0%,
+      #7a5a3c 48%,
+      #6b4f35 100%
+    );
+  border: 1px solid #c5a77a55;
+  box-shadow:
+    0 10px 18px #00000020,
+    inset 0 0 0 5px #563e2a22;
+}
+
+/* Outfield position markers */
+.fieldZone {
+  position: absolute;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 27px;
+  padding: 0;
+  border: 1px solid #ffffff22;
+  border-radius: 7px;
+  background: #071d16b8;
+  color: #dbece4;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .09em;
+  box-shadow: 0 3px 8px #00000025;
+  backdrop-filter: blur(3px);
+  cursor: pointer;
+  transition:
+    transform .12s ease,
+    background .12s ease,
+    border-color .12s ease,
+    box-shadow .12s ease;
+}
+
+.fieldZone:hover {
+  background: #123d2ae8;
+  border-color: #ffffff40;
+}
+
+.fieldZone.leftField {
+  left: 13%;
+  top: 28%;
+}
+
+.fieldZone.centerField {
+  left: 50%;
+  top: 14%;
+  transform: translateX(-50%);
+}
+
+.fieldZone.centerField:hover {
+  transform: translateX(-50%) translateY(-1px);
+}
+
+.fieldZone.rightField {
+  right: 13%;
+  top: 28%;
+}
+
+.fieldZone.selected {
+  background: #7c3cff;
+  border-color: #b99aff;
+  color: #fff;
+  box-shadow:
+    0 0 0 3px #7c3cff30,
+    0 6px 16px #00000035;
+}
+
+/* Base runner markers */
+.baseOnly {
+  position: absolute;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1.5px solid #ffffffdd;
+  border-radius: 2px;
+  background: #f8fafc;
+  color: #1d2939;
+  font-size: 7px;
+  font-weight: 950;
+  cursor: pointer;
+  transform: rotate(45deg);
+  box-shadow:
+    0 2px 7px #00000035;
+  transition:
+    transform .12s ease,
+    box-shadow .12s ease,
+    background .12s ease;
+}
+
+.baseOnly:hover {
+  transform: rotate(45deg) scale(1.06);
+}
+
+.baseOnly.first {
+  right: 31%;
+  top: 59%;
+}
+
+.baseOnly.second {
+  left: 50%;
+  top: 39%;
+  margin-left: -14px;
+}
+
+.baseOnly.third {
+  left: 31%;
+  top: 59%;
+}
+
+.baseOnly.home {
+  left: 50%;
+  bottom: 8%;
+  width: 25px;
+  height: 25px;
+  margin-left: -12.5px;
+  border-radius: 2px 2px 6px 2px;
+  cursor: default;
+}
+
+/* Occupied base */
+.baseOnly.occupied {
+  width: 38px;
+  height: 38px;
+  border-color: #ffffff;
+  background: #7c3cff;
+  color: #fff;
+  box-shadow:
+    0 0 0 3px #7c3cff35,
+    0 3px 10px #00000045;
+}
+
+/* Selected runner */
+.baseOnly.selected {
+  width: 43px;
+  height: 43px;
+  background: #a875ff;
+  box-shadow:
+    0 0 0 3px #ffffff35,
+    0 0 20px #7c3cff70;
+}
+
+/* Runner information */
+.selectedBaseRunner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 9px 0;
+  padding: 9px 11px;
+  border: 1px solid #7c3cff45;
+  border-radius: 8px;
+  background: #7c3cff0d;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.selectedBaseRunner button,
+.selectedFieldPositionNotice button {
+  min-height: 29px;
+  padding: 5px 10px;
+  border: 1px solid #ffffff1c;
+  border-radius: 6px;
+  background: #111118;
+  color: #d8dae1;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.selectedFieldPositionNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 9px 0;
+  padding: 8px 10px;
+  border: 1px solid #7c3cff45;
+  border-radius: 8px;
+  background: #7c3cff0d;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .07em;
+}
+
+@media (max-width: 700px) {
+  .baseOnlyField {
+    height: 245px;
+  }
+
+  .baseOnlyField::before {
+    width: 420px;
+    height: 265px;
+    top: -148px;
+  }
+
+  .baseDirt {
+    width: 112px;
+    height: 112px;
+  }
+
+  .fieldZone {
+    width: 39px;
+    height: 25px;
+    font-size: 8px;
+  }
+
+  .fieldZone.leftField {
+    left: 8%;
+  }
+
+  .fieldZone.rightField {
+    right: 8%;
+  }
+
+  .baseOnly.first {
+    right: 27%;
+  }
+
+  .baseOnly.third {
+    left: 27%;
+  }
+}
+

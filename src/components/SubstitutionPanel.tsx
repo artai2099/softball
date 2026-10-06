@@ -144,16 +144,21 @@ export function SubstitutionPanel({
   }
 
   return (
-    <section className="panel">
-      <div className="liveLabel">
-        SUBSTITUTION
-      </div>
+    <section className="panel substitutionPanel">
+      <details className="substitutionDetails">
+        <summary className="substitutionSummary">
+          <span className="liveLabel">SUBSTITUTION</span>
+          <span className="substitutionSummaryHint">
+            Tap to open
+          </span>
+        </summary>
 
-      <p className="notice">
-        Replace a player while keeping the same batting-order spot.
-      </p>
+        <div className="substitutionBody">
+          <p className="notice">
+            Replace a player while keeping the same batting-order spot.
+          </p>
 
-      <div className="form" style={{ marginTop: 12 }}>
+          <div className="form" style={{ marginTop: 12 }}>
         <label>
           Player out
           <select
@@ -266,8 +271,10 @@ export function SubstitutionPanel({
           {saving
             ? "Saving substitution..."
             : "MAKE SUBSTITUTION"}
-        </button>
-      </div>
+          </button>
+          </div>
+        </div>
+      </details>
     </section>
   );
 }
