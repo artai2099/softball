@@ -6,6 +6,7 @@ import { defensivePositions } from "@/lib/scoring";
 import type { Game,GameEvent,GameLineupPlayerView } from "@/lib/types";
 import { LiveRoom } from "./LiveRoom";
 import { PlayFeed } from "./PlayFeed";
+import { SubstitutionPanel } from "./SubstitutionPanel";
 
 const labels: Record<string,string> = { ball:"Ball",strike:"Strike",foul:"Foul",single:"1B",double:"2B",triple:"3B",home_run:"HR",walk:"Walk",hbp:"HBP",strikeout:"Strikeout",out:"Out",error:"Error",double_play:"Double play",triple_play:"Triple play" };
 
@@ -396,6 +397,17 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
           </section>
 
+
+          {canScore&&game.status==="live"&&(
+            <SubstitutionPanel
+              gameId={game.id}
+              gameVersion={game.version}
+              gameStatus={game.status}
+              lineup={initialLineup}
+              players={players}
+              canScore={canScore}
+            />
+          )}
 
           {canScore&&(
             <section className="panel gameControls">
