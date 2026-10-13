@@ -111,3 +111,11 @@ GameDay Pro can send a live public-game viewer layout to YouTube through LiveKit
 4. Use **Stream to YouTube** on the scorekeeper game screen to start the broadcast. Use the same control to stop it.
 
 The YouTube feature uses LiveKit Cloud Egress. Self-hosted LiveKit deployments need Egress deployed separately. Egress opens the public viewer page, so `NEXT_PUBLIC_APP_URL` must be set to the reachable HTTPS production URL in Vercel. The app never returns the stream key to the browser.
+
+## YouTube Live database migration
+
+Before deploying this feature to production, link the local Supabase CLI to the production project and run `supabase db push`. This creates the server-only `youtube_live_broadcasts` state table used to prevent duplicate streams and safely stop a broadcast after a page reload. The table has RLS enabled, no client access policies, and service-role-only privileges.
+
+In Vercel Production Environment Variables, add `YOUTUBE_STREAM_KEY` using the stream key from YouTube Studio's Live Control Room. Optionally set `YOUTUBE_WATCH_URL` to the stream's public or scheduled watch page. Keep `YOUTUBE_STREAM_KEY` server-side: never prefix it with `NEXT_PUBLIC_` or commit it. Redeploy after adding the variables. YouTube channel live streaming must already be enabled.
+
+The app uses the default secure YouTube ingest endpoint `rtmps://a.rtmps.youtube.com:443/live2`. If YouTube gives your channel a different RTMPS URL, update `YOUTUBE_RTMPS_BASE` in `src/app/api/games/[id]/youtube/route.ts` to match that stream's Server URL (without the stream key).
