@@ -10,7 +10,8 @@ const schema=z.object({
   LIVEKIT_PUBLIC_URL:z.string().url().refine(value=>value.startsWith("wss://"),"LIVEKIT_PUBLIC_URL must use wss://").optional(),
   LIVEKIT_API_KEY:z.string().min(3),
   LIVEKIT_API_SECRET:z.string().min(16),
-  YOUTUBE_STREAM_KEY:z.string().regex(/^[A-Za-z0-9_-]+$/, "Invalid YouTube stream key").optional()
+  YOUTUBE_STREAM_KEY:z.string().regex(/^[A-Za-z0-9_-]+$/, "Invalid YouTube stream key").optional(),
+  YOUTUBE_WATCH_URL:z.string().url().refine(value=>["youtube.com","www.youtube.com","youtu.be","m.youtube.com"].includes(new URL(value).hostname),"YOUTUBE_WATCH_URL must be a YouTube watch URL").optional()
 });
 
 export const env=schema.parse({
@@ -22,7 +23,8 @@ export const env=schema.parse({
   LIVEKIT_PUBLIC_URL:process.env.LIVEKIT_PUBLIC_URL || undefined,
   LIVEKIT_API_KEY:process.env.LIVEKIT_API_KEY,
   LIVEKIT_API_SECRET:process.env.LIVEKIT_API_SECRET,
-  YOUTUBE_STREAM_KEY:process.env.YOUTUBE_STREAM_KEY || undefined
+  YOUTUBE_STREAM_KEY:process.env.YOUTUBE_STREAM_KEY || undefined,
+  YOUTUBE_WATCH_URL:process.env.YOUTUBE_WATCH_URL || undefined
 });
 
 const livekitClientUrl = env.LIVEKIT_PUBLIC_URL || env.LIVEKIT_URL;
