@@ -150,12 +150,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                   : "Scheduled"} · {game.venue||"GameDay Field"}
             </div>
 
-            <a
-              className="button secondary"
-              href={`/dashboard/games/${game.id}/stats`}
-            >
-              Stats
-            </a>
+
           </div>
 
 
@@ -555,8 +550,21 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       </div>
 
       <section className="playFeedBottom">
-        <PlayFeed events={events}/>
+        <PlayFeed events={events} collapsible />
       </section>
+
+      <div className="statsBottomAction">
+        <a
+          className="button secondary"
+          href={`/dashboard/games/${game.id}/stats`}
+        >
+          Stats
+        </a>
+      </div>
+
+      <div className="statsBottomAction">
+
+      </div>
 
 
 
