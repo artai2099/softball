@@ -8,23 +8,20 @@ export function LiveRoom({
   gameId,
   role,
   game,
+  autoConnect = false,
+  captureMode = false,
 }: {
   gameId: string;
   role: "viewer" | "broadcaster";
   game: Game;
+  autoConnect?: boolean;
+  captureMode?: boolean;
 }) {
   const [status, setStatus] = useState("Ready");
   const [active, setActive] = useState(false);
   const [muted, setMuted] = useState(false);
   const roomRef = useRef<Room | null>(null);
   const mediaRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    return () => {
-      void roomRef.current?.disconnect();
-      roomRef.current = null;
-    };
-  }, []);
 
   async function connect() {
     setStatus("Connecting…");
@@ -231,6 +228,21 @@ export function LiveRoom({
     }
   }
 
+  useEffect(() => {
+    if (autoConnect && role === "viewer") {
+      void connect().catch((error) => {
+        setStatus(error instanceof Error ? error.message : "Automatic live video connection failed");
+      });
+    }
+
+    return () => {
+      void roomRef.current?.disconnect();
+      roomRef.current = null;
+    };
+    // The capture page opens once with fixed game/role props.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function fullscreen() {
     const element = mediaRef.current;
 
@@ -253,9 +265,9 @@ export function LiveRoom({
   const half = game.half === "top" ? "TOP" : "BOT";
 
   return (
-    <section className="gdpStream">
+    <section className={`gdpStream ${captureMode ? "gdpCapture" : ""}`}>
       <div className="gdpStreamStage" ref={mediaRef}>
-        {!active && (
+        {!captureMode && !active && (
           <div className="gdpStreamEmpty">
             <div className="gdpStreamEmptyIcon">
               <span>▶</span>
@@ -333,7 +345,7 @@ export function LiveRoom({
           </div>
         </div>
 
-        <div className="gdpStreamTopControls">
+        {!captureMode && <div className="gdpStreamTopControls">
           <div className="gdpStreamBrand">
             <span className="gdpBrandMark">G</span>
             <span>GameDay</span>
@@ -362,9 +374,9 @@ export function LiveRoom({
               </button>
             </div>
           )}
-        </div>
+        </div>}
 
-        <div className="gdpStreamBottom">
+        {!captureMode && <div className="gdpStreamBottom">
           <div className="gdpConnection">
             <span className={active ? "connected" : ""} />
             <div>
@@ -396,7 +408,7 @@ export function LiveRoom({
                 ? "Start Camera"
                 : "Watch Live"}
           </button>
-        </div>
+        </div>}
       </div>
 
       <style jsx>{`
@@ -410,6 +422,21 @@ export function LiveRoom({
           box-shadow:
             0 18px 50px rgba(0, 0, 0, 0.25),
             0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .gdpStream.gdpCapture {
+          width: 100vw;
+          height: 100vh;
+          margin: 0;
+          border: 0;
+          border-radius: 0;
+          box-shadow: none;
+        }
+
+        .gdpStream.gdpCapture .gdpStreamStage {
+          height: 100vh;
+          min-height: 100vh;
+          aspect-ratio: auto;
         }
 
         .gdpStreamStage {

@@ -12,6 +12,7 @@ This project replaces the earlier LAN-only Express prototype. It uses a modular 
 - PostgreSQL scoring procedures with row locks, optimistic versions, and idempotency keys
 - Supabase Realtime for live scoreboard updates
 - LiveKit Cloud for broadcaster and spectator video
+- LiveKit Egress for broadcasting the public scoreboard camera layout to YouTube Live
 - Vercel-ready configuration and security headers
 
 ## Included functionality
@@ -99,3 +100,22 @@ This is a production-oriented foundation, not a completed commercial service. Be
 ## Scoring hardening migration
 
 After deploying the updated application, apply the new Supabase migration with `supabase db push`. The migration adds current batter tracking, prevents undo on finalized games until the game is explicitly reopened, preserves the stored pitch count, and adds the reopen RPC used by the scoring console.
+
+## YouTube Live streaming
+
+GameDay Pro can send a live public-game viewer layout to YouTube through LiveKit Web Egress and RTMPS. The video includes the GameDay camera view and its live scoreboard overlay.
+
+1. In YouTube Studio, create or schedule a live stream and copy its stream key.
+2. In Vercel, add `YOUTUBE_STREAM_KEY` as a server-side environment variable. Do not use a `NEXT_PUBLIC_` prefix, commit the key, or put it in browser code.
+3. Ensure the game's visibility is set to **Public**, start the game, and start the GameDay camera.
+4. Use **Stream to YouTube** on the scorekeeper game screen to start the broadcast. Use the same control to stop it.
+
+The YouTube feature uses LiveKit Cloud Egress. Self-hosted LiveKit deployments need Egress deployed separately. Egress opens the public viewer page, so `NEXT_PUBLIC_APP_URL` must be set to the reachable HTTPS production URL in Vercel. The app never returns the stream key to the browser.
+
+## YouTube Live database migration
+
+Before deploying this feature to production, link the local Supabase CLI to the production project and run `supabase db push`. This creates the server-only `youtube_live_broadcasts` state table used to prevent duplicate streams and safely stop a broadcast after a page reload. The table has RLS enabled, no client access policies, and service-role-only privileges.
+
+In Vercel Production Environment Variables, add `YOUTUBE_STREAM_KEY` using the stream key from YouTube Studio's Live Control Room. Optionally set `YOUTUBE_WATCH_URL` to the stream's public or scheduled watch page. Keep `YOUTUBE_STREAM_KEY` server-side: never prefix it with `NEXT_PUBLIC_` or commit it. Redeploy after adding the variables. YouTube channel live streaming must already be enabled. For a one-button handoff from GameDay, enable YouTube's auto-start/auto-stop settings for that stream; otherwise YouTube Studio may still require you to click **Go Live** after the encoder feed arrives.
+
+The app uses the default secure YouTube ingest endpoint `rtmps://a.rtmps.youtube.com:443/live2`. If YouTube gives your channel a different RTMPS URL, update `YOUTUBE_RTMPS_BASE` in `src/app/api/games/[id]/youtube/route.ts` to match that stream's Server URL (without the stream key).
