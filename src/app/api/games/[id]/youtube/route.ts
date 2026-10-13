@@ -11,9 +11,10 @@ export const dynamic = "force-dynamic";
 
 const actionSchema = z.object({ action: z.enum(["start", "stop"]) });
 const YOUTUBE_RTMPS_BASE = "rtmps://a.rtmps.youtube.com:443/live2";
+const START_LEASE_TTL_MS = 2 * 60 * 1000;
 
 function egressClient() {
-  // Egress APIs use HTTPS even when browser media connects over WSS.
+  // LiveKit's server API uses HTTPS even when browser media connects over WSS.
   const apiUrl = env.LIVEKIT_URL.replace(/^wss:/, "https:");
   return new EgressClient(apiUrl, env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
 }
@@ -24,14 +25,6 @@ function captureUrl(publicId: string) {
     throw new Error("NEXT_PUBLIC_APP_URL must use HTTPS in production for YouTube capture.");
   }
   return `${appUrl}/watch/${publicId}?broadcast=1`;
-}
-
-function isYoutubeCapture(info: {
-  web?: { url?: string };
-  request?: { case?: string; value?: { url?: string } };
-}, url: string) {
-  return info.web?.url === url ||
-    (info.request?.case === "web" && info.request.value?.url === url);
 }
 
 async function getGameAndAuthorize(id: string) {
@@ -86,10 +79,39 @@ async function getGameAndAuthorize(id: string) {
   return { admin, game, user } as const;
 }
 
-async function listYouTubeEgress(roomName: string, url: string) {
+async function getBroadcastRow(admin: ReturnType<typeof createAdminClient>, gameId: string) {
+  return admin
+    .from("youtube_live_broadcasts")
+    .select("game_id,egress_id,status,created_at")
+    .eq("game_id", gameId)
+    .maybeSingle();
+}
+
+async function isEgressActive(egressId: string) {
   const client = egressClient();
-  const items = await client.listEgress({ roomName, active: true });
-  return items.filter((item) => isYoutubeCapture(item as never, url));
+  return (await client.listEgress({ egressId, active: true })).length > 0;
+}
+
+async function allowBroadcastChange(admin: ReturnType<typeof createAdminClient>, userId: string, gameId: string) {
+  const keyHash = createHash("sha256")
+    .update(`${userId}:youtube-egress:${gameId}`)
+    .digest("hex");
+  const { data: allowed, error } = await admin.rpc("consume_rate_limit", {
+    p_key_hash: keyHash,
+    p_limit: 6,
+    p_window_seconds: 60,
+  });
+
+  if (error) {
+    console.error("YouTube broadcast rate limiter failed");
+    return NextResponse.json({ error: "Broadcast protection is temporarily unavailable." }, { status: 503 });
+  }
+
+  if (allowed !== true) {
+    return NextResponse.json({ error: "Too many broadcast changes. Wait a minute and try again." }, { status: 429 });
+  }
+
+  return null;
 }
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -104,12 +126,32 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "YouTube capture requires a public HTTPS app URL." }, { status: 503 });
   }
 
+  const { data: broadcast, error } = await getBroadcastRow(auth.admin, auth.game.id);
+  if (error) {
+    console.error("YouTube broadcast status lookup failed");
+    return NextResponse.json({ error: "Could not check YouTube broadcast status." }, { status: 503 });
+  }
+
   let active = false;
-  try {
-    active = (await listYouTubeEgress(`game-${auth.game.id}`, url)).length > 0;
-  } catch (error) {
-    console.error("Unable to check YouTube egress status", error);
-    return NextResponse.json({ error: "Could not check LiveKit broadcast status." }, { status: 503 });
+  if (broadcast) {
+    if (!broadcast.egress_id) {
+      const ageMs = Date.now() - new Date(broadcast.created_at).getTime();
+      if (broadcast.status === "starting" && ageMs <= START_LEASE_TTL_MS) {
+        active = true;
+      } else {
+        await auth.admin.from("youtube_live_broadcasts").delete().eq("game_id", auth.game.id);
+      }
+    } else {
+      try {
+        active = await isEgressActive(broadcast.egress_id);
+        if (!active) {
+          await auth.admin.from("youtube_live_broadcasts").delete().eq("game_id", auth.game.id);
+        }
+      } catch {
+        console.error("LiveKit YouTube egress status lookup failed");
+        return NextResponse.json({ error: "Could not check LiveKit broadcast status." }, { status: 503 });
+      }
+    }
   }
 
   return NextResponse.json({
@@ -131,31 +173,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const auth = await getGameAndAuthorize(id);
   if ("response" in auth) return auth.response;
 
-  if (!env.YOUTUBE_STREAM_KEY) {
-    return NextResponse.json({ error: "YouTube streaming is not configured. Add YOUTUBE_STREAM_KEY to the server environment." }, { status: 503 });
-  }
-
-  if (auth.game.visibility !== "public") {
-    return NextResponse.json({ error: "Set this game to Public before streaming its scoreboard to YouTube." }, { status: 409 });
-  }
-
-  if (auth.game.status !== "live") {
-    return NextResponse.json({ error: "Start the softball game before starting YouTube Live." }, { status: 409 });
-  }
-
-  const keyHash = createHash("sha256")
-    .update(`${auth.user.id}:youtube-egress:${auth.game.id}`)
-    .digest("hex");
-  const { data: allowed, error: limitError } = await auth.admin.rpc("consume_rate_limit", {
-    p_key_hash: keyHash,
-    p_limit: 6,
-    p_window_seconds: 60,
-  });
-  if (limitError) {
-    console.error("YouTube broadcast rate limiter failed", limitError);
-    return NextResponse.json({ error: "Broadcast protection is temporarily unavailable." }, { status: 503 });
-  }
-  if (allowed !== true) return NextResponse.json({ error: "Too many broadcast changes. Wait a minute and try again." }, { status: 429 });
+  const limitError = await allowBroadcastChange(auth.admin, auth.user.id, auth.game.id);
+  if (limitError) return limitError;
 
   let url: string;
   try {
@@ -165,16 +184,45 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const client = egressClient();
-  const roomName = `game-${auth.game.id}`;
 
-  try {
-    const active = await listYouTubeEgress(roomName, url);
+  if (parsed.data.action === "start") {
+    if (!env.YOUTUBE_STREAM_KEY) {
+      return NextResponse.json({ error: "YouTube streaming is not configured. Add YOUTUBE_STREAM_KEY to the server environment." }, { status: 503 });
+    }
+    if (auth.game.visibility !== "public") {
+      return NextResponse.json({ error: "Set this game to Public before streaming its scoreboard to YouTube." }, { status: 409 });
+    }
+    if (auth.game.status !== "live") {
+      return NextResponse.json({ error: "Start the softball game before starting YouTube Live." }, { status: 409 });
+    }
 
-    if (parsed.data.action === "start") {
-      if (active.length > 0) {
+    const { data: existing, error: existingError } = await getBroadcastRow(auth.admin, auth.game.id);
+    if (existingError) {
+      return NextResponse.json({ error: "Could not verify whether a YouTube broadcast is already running." }, { status: 503 });
+    }
+    if (existing) {
+      const ageMs = Date.now() - new Date(existing.created_at).getTime();
+      if (existing.egress_id && await isEgressActive(existing.egress_id)) {
         return NextResponse.json({ active: true, message: "YouTube broadcast is already starting or live." });
       }
+      if (!existing.egress_id && existing.status === "starting" && ageMs <= START_LEASE_TTL_MS) {
+        return NextResponse.json({ active: true, message: "YouTube broadcast is already starting. Wait a moment and refresh status." }, { status: 409 });
+      }
+      await auth.admin.from("youtube_live_broadcasts").delete().eq("game_id", auth.game.id);
+    }
 
+    const { error: reserveError } = await auth.admin
+      .from("youtube_live_broadcasts")
+      .insert({ game_id: auth.game.id, status: "starting", created_by: auth.user.id });
+    if (reserveError) {
+      if (reserveError.code === "23505") {
+        return NextResponse.json({ active: true, message: "A YouTube broadcast is already being started." }, { status: 409 });
+      }
+      console.error("Could not reserve YouTube broadcast state");
+      return NextResponse.json({ error: "Could not reserve a YouTube broadcast. Check the database migration." }, { status: 503 });
+    }
+
+    try {
       const info = await client.startWebEgress(
         url,
         {
@@ -186,29 +234,53 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         { videoOnly: false },
       );
 
-      if (!info.egressId) {
-        return NextResponse.json({ error: "LiveKit did not return a broadcast ID." }, { status: 502 });
+      if (!info.egressId) throw new Error("LiveKit did not return a broadcast ID.");
+
+      const { error: saveError } = await auth.admin
+        .from("youtube_live_broadcasts")
+        .update({ egress_id: info.egressId, status: "active", updated_at: new Date().toISOString() })
+        .eq("game_id", auth.game.id);
+
+      if (saveError) {
+        await client.stopEgress(info.egressId).catch(() => undefined);
+        throw new Error("Could not save broadcast state.");
       }
 
       return NextResponse.json({ active: true, message: "YouTube broadcast is starting." }, { status: 202 });
+    } catch (error) {
+      console.error("YouTube Live start failed", error instanceof Error ? error.name : "unknown error");
+      await auth.admin.from("youtube_live_broadcasts").delete().eq("game_id", auth.game.id);
+      return NextResponse.json({
+        error: "Could not start YouTube Live. Check the LiveKit Egress service and YouTube stream settings.",
+      }, { status: 502 });
     }
+  }
 
-    if (active.length === 0) {
-      return NextResponse.json({ active: false, message: "No GameDay YouTube broadcast is active." });
+  const { data: broadcast, error: broadcastError } = await getBroadcastRow(auth.admin, auth.game.id);
+  if (broadcastError) {
+    return NextResponse.json({ error: "Could not load YouTube broadcast state." }, { status: 503 });
+  }
+  if (!broadcast) {
+    return NextResponse.json({ active: false, message: "No GameDay YouTube broadcast is active." });
+  }
+
+  if (!broadcast.egress_id) {
+    const ageMs = Date.now() - new Date(broadcast.created_at).getTime();
+    if (broadcast.status === "starting" && ageMs <= START_LEASE_TTL_MS) {
+      return NextResponse.json({ error: "The broadcast is still starting. Wait a moment and try stopping it again." }, { status: 409 });
     }
+    await auth.admin.from("youtube_live_broadcasts").delete().eq("game_id", auth.game.id);
+    return NextResponse.json({ active: false, message: "The YouTube broadcast was not active." });
+  }
 
-    await Promise.all(active.map((item) => {
-      if (!item.egressId) throw new Error("LiveKit broadcast ID is missing.");
-      return client.stopEgress(item.egressId);
-    }));
-
+  try {
+    if (await isEgressActive(broadcast.egress_id)) {
+      await client.stopEgress(broadcast.egress_id);
+    }
+    await auth.admin.from("youtube_live_broadcasts").delete().eq("game_id", auth.game.id);
     return NextResponse.json({ active: false, message: "YouTube broadcast stop requested." });
-  } catch (error) {
-    console.error("YouTube Live egress request failed", error);
-    return NextResponse.json({
-      error: parsed.data.action === "start"
-        ? "Could not start YouTube Live. Check the LiveKit Egress service and YouTube stream settings."
-        : "Could not stop YouTube Live. Check LiveKit Egress status and try again.",
-    }, { status: 502 });
+  } catch {
+    console.error("YouTube Live stop failed");
+    return NextResponse.json({ error: "Could not stop YouTube Live. Check LiveKit Egress status and try again." }, { status: 502 });
   }
 }
