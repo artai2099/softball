@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Game } from "@/lib/types";
-import { createLocalTracks, Room, RoomEvent, Track } from "livekit-client";
+import { createLocalTracks, Room, RoomEvent, Track, VideoPresets } from "livekit-client";
 
 export function LiveRoom({
   gameId,
@@ -101,39 +101,63 @@ export function LiveRoom({
 
     if (role === "broadcaster") {
       let tracks;
+      const audioOptions = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      };
 
       try {
         /*
-         * Prefer the rear/environment camera on phones,
-         * but allow the browser to choose another camera if
-         * that constraint is unavailable.
+         * Aim for 1080p/30fps using the rear camera for a sharper
+         * field view. Browsers may negotiate a lower actual quality.
          */
         tracks = await createLocalTracks({
-          audio: true,
+          audio: audioOptions,
           video: {
+            resolution: VideoPresets.h1080.resolution,
+            frameRate: 30,
             facingMode: "environment",
           },
         });
       } catch {
         /*
-         * Desktop browsers and some devices do not expose
-         * an environment camera. Fall back to any available
-         * video input instead of failing the entire stream.
+         * Fall back to 720p if the device, browser, or upload setup
+         * cannot initialize the preferred 1080p capture mode.
          */
         try {
           tracks = await createLocalTracks({
-            audio: true,
-            video: true,
+            audio: audioOptions,
+            video: {
+              resolution: VideoPresets.h720.resolution,
+              frameRate: 30,
+              facingMode: "environment",
+            },
           });
         } catch {
           /*
-           * If the microphone is the part that failed,
-           * still allow the camera to start.
+           * Some desktop devices have no environment-facing camera.
+           * Try any available camera at 720p before dropping resolution
+           * constraints entirely.
            */
-          tracks = await createLocalTracks({
-            audio: false,
-            video: true,
-          });
+          try {
+            tracks = await createLocalTracks({
+              audio: audioOptions,
+              video: {
+                resolution: VideoPresets.h720.resolution,
+                frameRate: 30,
+              },
+            });
+          } catch {
+            /*
+             * If audio permission or capture fails, still try to start
+             * video so a microphone issue doesn't block the game.
+             */
+            tracks = await createLocalTracks({
+              audio: false,
+              video: true,
+            });
+          }
         }
       }
 
