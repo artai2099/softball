@@ -374,7 +374,7 @@ export function LiveRoom({
               </button>
             </div>
           )}
-        </div>
+        </div>}
 
         {!captureMode && <div className="gdpStreamBottom">
           <div className="gdpConnection">
