@@ -5,11 +5,18 @@ import type { Game,GameEvent } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function WatchPage({ params }: { params: Promise<{ publicId: string }> }) {
-  const { publicId } = await params;
+export default async function WatchPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ publicId: string }>;
+  searchParams: Promise<{ broadcast?: string | string[] }>;
+}) {
+  const [{ publicId }, query] = await Promise.all([params, searchParams]);
+  const broadcastMode = query.broadcast === "1";
   const supabase = await createClient();
   const { data: game } = await supabase.from("games").select("*").eq("public_id", publicId).eq("visibility", "public").single();
   if (!game) notFound();
   const {data:events}=await supabase.from("game_events").select("*").eq("game_id",game.id).is("voided_at",null).order("sequence");
-  return <PublicScoreboard initialGame={game as Game} initialEvents={(events||[]) as GameEvent[]} />;
+  return <PublicScoreboard initialGame={game as Game} initialEvents={(events||[]) as GameEvent[]} broadcastMode={broadcastMode} />;
 }
