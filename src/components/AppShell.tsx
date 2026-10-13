@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { signOut } from "@/app/login/actions";
-import { switchOrganization } from "@/app/dashboard/actions";
 
 type OrganizationOption = {
   id: string;
@@ -25,8 +24,6 @@ const organizationNavigation = [
 export function AppShell({
   children,
   userName,
-  organizations,
-  activeOrganization,
   hasOrganizationMembership,
 }: {
   children: React.ReactNode;
@@ -453,23 +450,7 @@ export function AppShell({
 
             <div className="mobileNavUser">{userName}</div>
 
-            <form action={switchOrganization}>
-              <select
-                name="organizationId"
-                defaultValue={activeOrganization}
-                aria-label="Organization"
-              >
-                {organizations.map((organization) => (
-                  <option key={organization.id} value={organization.id}>
-                    {organization.name}
-                  </option>
-                ))}
-              </select>
-
-              <button type="submit" className="button secondary">
-                Switch Organization
-              </button>
-            </form>
+            
 
             <div className="mobileNavDivider" />
 
@@ -487,23 +468,7 @@ export function AppShell({
         </Link>
 
         <div className="topActions">
-          <form action={switchOrganization}>
-            <select
-              name="organizationId"
-              defaultValue={activeOrganization}
-              aria-label="Organization"
-            >
-              {organizations.map((organization) => (
-                <option key={organization.id} value={organization.id}>
-                  {organization.name}
-                </option>
-              ))}
-            </select>
-
-            <button type="submit" className="button secondary">
-              Switch
-            </button>
-          </form>
+          
 
           <small>{userName}</small>
 
