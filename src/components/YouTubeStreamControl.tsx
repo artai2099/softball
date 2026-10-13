@@ -83,6 +83,15 @@ export function YouTubeStreamControl({ gameId }: { gameId: string }) {
 
       {!status ? (
         <p className="notice">Checking YouTube setup…</p>
+      ) : status.active ? (
+        <button
+          type="button"
+          className="button youtubeStopButton"
+          disabled={busy}
+          onClick={() => void toggleBroadcast()}
+        >
+          {busy ? "Please wait…" : "■  Stop YouTube Stream"}
+        </button>
       ) : !status.configured ? (
         <p className="notice">
           Setup required: add YOUTUBE_STREAM_KEY in the Vercel server environment, then redeploy.
@@ -94,11 +103,11 @@ export function YouTubeStreamControl({ gameId }: { gameId: string }) {
       ) : (
         <button
           type="button"
-          className={status.active ? "button youtubeStopButton" : "button youtubeStartButton"}
+          className="button youtubeStartButton"
           disabled={busy}
           onClick={() => void toggleBroadcast()}
         >
-          {busy ? "Please wait…" : status.active ? "■  Stop YouTube Stream" : "▶  Stream to YouTube"}
+          {busy ? "Please wait…" : "▶  Stream to YouTube"}
         </button>
       )}
 
