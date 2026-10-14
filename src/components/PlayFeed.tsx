@@ -15,9 +15,17 @@ const playNames: Record<string, string> = {
   error: "Error",
   double_play: "Double play",
   triple_play: "Triple play",
+  runner_advance: "Runner advanced",
+  runner_score: "Runner scored",
+  runner_out: "Runner out",
 };
 
 function defensiveText(details: Record<string, string> = {}) {
+  if (details.base_from) {
+    const baseLabel = (base: string) => base === "1" ? "1B" : base === "2" ? "2B" : base === "3" ? "3B" : base;
+    if (details.base_to) return `${baseLabel(details.base_from)} → ${baseLabel(details.base_to)}`;
+    return `${baseLabel(details.base_from)} → Home`;
+  }
   if (details.error_position) return `Error · ${details.error_position}`;
   const outs = [
     details.out_position_1,
