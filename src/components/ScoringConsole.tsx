@@ -16,6 +16,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
   const [game,setGame]=useState(initialGame); const [events,setEvents]=useState(initialEvents);
   const [pending,setPending]=useState<string|null>(null); const [positions,setPositions]=useState<string[]>([]);
   const [selectedRunnerBase,setSelectedRunnerBase]=useState<"1"|"2"|"3"|null>(null);
+  const [runnerModalOpen,setRunnerModalOpen]=useState(false);
   const [selectedFieldPosition,setSelectedFieldPosition]=useState<"LF"|"CF"|"RF"|null>(null);
   const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
   const [message,setMessage]=useState(""); const [saving,setSaving]=useState(false);
@@ -118,6 +119,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       setGame(updatedGame);
       setBatterId(updatedGame.current_batter_id || null);
       setSelectedRunnerBase(action === "advance" && baseTo ? baseTo : null);
+      setRunnerModalOpen(false);
       setMessage(action === "advance" ? `Runner advanced to ${baseTo}B.` : action === "score" ? "Run recorded." : "Runner out recorded.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Runner action could not be recorded");
@@ -127,7 +129,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
   }
 
   useEffect(() => {
-    if (!pending) return;
+    if (!pending && !runnerModalOpen) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -136,16 +138,20 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       if (event.key === "Escape") {
         setPending(null);
         setPositions([]);
+        setRunnerModalOpen(false);
       }
     };
     window.addEventListener("keydown", onKeyDown);
-    document.querySelector<HTMLButtonElement>(".scoringActionModal .position")?.focus();
+    const firstModalButton = pending
+      ? ".scoringActionModal .position"
+      : ".runnerOutcomeButtons .runnerChoiceButton";
+    document.querySelector<HTMLButtonElement>(firstModalButton)?.focus();
 
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [pending]);
+  }, [pending, runnerModalOpen]);
 
   function choose(result:string){if(["out","error","double_play","triple_play"].includes(result)){setPending(result);setPositions([])}else void record(result)}
   function selectPosition(position:string){setPositions(c=>c.length<required?[...c,position]:[...c.slice(0,-1),position])}
@@ -449,11 +455,15 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                           : `${base}B runner`
                         : `${base}B empty`
                     }
-                    onClick={() =>
-                      runnerId
-                        ? setSelectedRunnerBase(base)
-                        : setSelectedRunnerBase(null)
-                    }
+                    onClick={() => {
+                      if (runnerId) {
+                        setSelectedRunnerBase(base);
+                        setRunnerModalOpen(canScore && game.status !== "final");
+                      } else {
+                        setSelectedRunnerBase(null);
+                        setRunnerModalOpen(false);
+                      }
+                    }}
                   >
                     {runner
                       ? `#${runner.jersey_number}`
@@ -472,58 +482,6 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
               </button>
 
             </div>
-
-            {selectedRunnerBase && game.bases?.[selectedRunnerBase] && (() => {
-              const runnerId = game.bases[selectedRunnerBase];
-              const runner = scoringPlayers.find(
-                player => player.player_id === runnerId,
-              );
-
-              return (
-                <div className="selectedBaseRunner">
-                  <span>
-                    {runner
-                      ? `${selectedRunnerBase}B · #${runner.jersey_number} ${runner.first_name} ${runner.last_name}`
-                      : `${selectedRunnerBase}B · Runner on base`}
-                  </span>
-
-                  <div className="runnerActionButtons">
-                    <button
-                      type="button"
-                      className="button secondary"
-                      disabled={!canScore || saving || game.status === "final" || selectedRunnerBase === "3" || Boolean(game.bases[selectedRunnerBase === "1" ? "2" : "3"])}
-                      onClick={() => void runnerAction("advance")}
-                    >
-                      Advance
-                    </button>
-                    <button
-                      type="button"
-                      className="button primary"
-                      disabled={!canScore || saving || game.status === "final"}
-                      onClick={() => void runnerAction("score")}
-                    >
-                      Score
-                    </button>
-                    <button
-                      type="button"
-                      className="button red"
-                      disabled={!canScore || saving || game.status === "final"}
-                      onClick={() => void runnerAction("out")}
-                    >
-                      Runner out
-                    </button>
-                    <button
-                      type="button"
-                      className="button secondary"
-                      disabled={saving}
-                      onClick={() => setSelectedRunnerBase(null)}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-              );
-            })()}
 
             {selectedFieldPosition && (
               <div className="selectedFieldPositionNotice">
@@ -682,6 +640,66 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                 {saving ? "Saving…" : "Record play"}
               </button>
             </div>
+            {message && <p className="scoringActionModalError" role="alert">{message}</p>}
+          </section>
+        </div>,
+        document.body
+      )}
+
+      {canScore && runnerModalOpen && selectedRunnerBase && game.bases?.[selectedRunnerBase] && typeof document !== "undefined" && createPortal(
+        <div
+          className="scoringActionModalBackdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setRunnerModalOpen(false);
+            }
+          }}
+        >
+          <section
+            className="scoringActionModal runnerActionModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="runner-action-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="scoringActionModalHeader">
+              <div>
+                <div className="scoringActionModalEyebrow">BASE RUNNING</div>
+                <h2 id="runner-action-modal-title">Runner at {selectedRunnerBase}B</h2>
+              </div>
+              <button
+                type="button"
+                className="scoringActionModalClose"
+                aria-label="Close runner action menu"
+                onClick={() => setRunnerModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="scoringActionModalInstruction">
+              Choose the result for this runner. Hit moves safely to the next base; a hit from 3B scores a run. Out records a runner out.
+            </p>
+
+            <div className="runnerOutcomeButtons">
+              <button
+                type="button"
+                className="button primary runnerChoiceButton"
+                disabled={!canScore || saving || game.status === "final" || (selectedRunnerBase !== "3" && Boolean(game.bases[selectedRunnerBase === "1" ? "2" : "3"]))}
+                onClick={() => void runnerAction(selectedRunnerBase === "3" ? "score" : "advance")}
+              >
+                {saving ? "Saving…" : "Hit"}
+              </button>
+              <button
+                type="button"
+                className="button red runnerChoiceButton"
+                disabled={!canScore || saving || game.status === "final"}
+                onClick={() => void runnerAction("out")}
+              >
+                {saving ? "Saving…" : "Out"}
+              </button>
+            </div>
+
             {message && <p className="scoringActionModalError" role="alert">{message}</p>}
           </section>
         </div>,
