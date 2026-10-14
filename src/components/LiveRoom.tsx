@@ -20,6 +20,7 @@ export function LiveRoom({
   const [status, setStatus] = useState("Ready");
   const [active, setActive] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const mutedRef = useRef(false);
   const roomRef = useRef<Room | null>(null);
   const mediaRef = useRef<HTMLDivElement>(null);
@@ -262,6 +263,11 @@ export function LiveRoom({
   }
 
   useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
     if (autoConnect && role === "viewer") {
       void connect().catch((error) => {
         setStatus(error instanceof Error ? error.message : "Automatic live video connection failed");
@@ -269,6 +275,7 @@ export function LiveRoom({
     }
 
     return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
       void roomRef.current?.disconnect();
       roomRef.current = null;
     };
@@ -390,8 +397,16 @@ export function LiveRoom({
                 type="button"
                 className="gdpAudioButton"
                 onClick={() => void toggleMute()}
-                aria-label={muted ? "Unmute audio" : "Mute audio"}
-                title={muted ? "Unmute audio" : "Mute audio"}
+                aria-label={
+                  role === "broadcaster"
+                    ? muted ? "Unmute microphone" : "Mute microphone"
+                    : muted ? "Unmute audio" : "Mute audio"
+                }
+                title={
+                  role === "broadcaster"
+                    ? muted ? "Unmute microphone" : "Mute microphone"
+                    : muted ? "Unmute audio" : "Mute audio"
+                }
               >
                 {muted ? "🔇" : "🔊"}
               </button>
@@ -400,10 +415,10 @@ export function LiveRoom({
                 type="button"
                 className="gdpFullscreenButton"
                 onClick={fullscreen}
-                aria-label="Enter fullscreen"
-                title="Fullscreen"
+                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
               >
-                ⛶
+                {isFullscreen ? "⤢" : "⛶"}
               </button>
             </div>
           )}
@@ -749,11 +764,12 @@ export function LiveRoom({
           background: rgba(255, 255, 255, 0.12);
         }
 
-        /* Keep the utility controls away from the scorebug and team names. */
+        /* Keep playback controls on the edge, clear of the scoreboard and play area. */
         .gdpStreamTopControls {
           position: absolute;
-          top: 50%;
+          top: auto;
           right: 14px;
+          bottom: 86px;
           left: auto;
           z-index: 9;
           display: flex;
@@ -761,7 +777,7 @@ export function LiveRoom({
           justify-content: center;
           width: auto;
           padding: 0;
-          transform: translateY(-50%);
+          transform: none;
           pointer-events: none;
           background: transparent;
         }
@@ -792,14 +808,14 @@ export function LiveRoom({
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 10px;
-          padding: 7px;
-          border: 1px solid rgba(255, 255, 255, 0.16);
+          gap: 8px;
+          padding: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.18);
           border-radius: 16px;
-          background: rgba(5, 7, 10, 0.62);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          background: rgba(5, 7, 10, 0.72);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
           pointer-events: auto;
         }
 
@@ -1017,17 +1033,18 @@ export function LiveRoom({
           }
 
           .gdpStreamTopControls {
-            top: 50%;
+            top: auto;
             right: 10px;
+            bottom: 78px;
             left: auto;
             padding: 0;
-            transform: translateY(-50%);
+            transform: none;
             justify-content: center;
           }
 
           .gdpStreamTopActions {
-            gap: 8px;
-            padding: 6px;
+            gap: 7px;
+            padding: 5px;
           }
 
           .gdpStreamBottom {
@@ -1110,6 +1127,11 @@ export function LiveRoom({
 
           .gdpStreamBottom {
             padding: 24px 10px 8px;
+          }
+
+          .gdpStreamTopControls {
+            bottom: 58px;
+            right: 10px;
           }
         }
 
