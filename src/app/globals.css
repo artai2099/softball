@@ -5888,3 +5888,186 @@
   .livePage .gameCameraBadge { display: none; }
   .livePage .cameraDetailsBody { padding: 8px !important; }
 }
+
+
+/* =========================================================
+   GAMEDAY PRO — PHONE SCOREKEEPER LAYOUT
+   Keep the same scoring workflow, reordered for one-handed phone use.
+   Desktop/tablet layout above remains unchanged.
+   ========================================================= */
+@media (max-width: 680px) {
+  .livePage {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 9px 88px;
+  }
+
+  .livePage .liveGrid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    width: 100%;
+  }
+
+  /* Flatten the two desktop columns so the phone can interleave their
+     panels into one logical scoring sequence without duplicating controls. */
+  .livePage .liveGrid > main,
+  .livePage .liveGrid > aside {
+    display: contents !important;
+  }
+
+  .livePage .scorekeeperStatus { order: 1; }
+  .livePage .batterPanel { order: 2; }
+  .livePage .liveGrid > aside > .baseRunnersPanel { order: 3; }
+  .livePage .pitchPlayPanel { order: 4; }
+  .livePage .gameControls { order: 5; }
+  .livePage .pendingPlayPanel { order: 6; }
+  .livePage .runnerActionMessage { order: 7; }
+  .livePage .liveGrid > aside > * { order: 8; }
+
+  .livePage .panel {
+    min-width: 0;
+    margin-top: 10px;
+    margin-bottom: 0;
+    padding: 13px;
+    border-radius: 13px;
+  }
+
+  .livePage .scorekeeperStatus {
+    margin: 0 0 2px !important;
+    min-height: 22px;
+  }
+
+  .livePage .pageHead {
+    gap: 10px;
+  }
+
+  .livePage .batterLine {
+    overflow-wrap: anywhere;
+  }
+
+  .livePage .actionGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .livePage .scoreButton {
+    min-width: 0;
+    min-height: 56px !important;
+    padding: 8px 4px;
+    font-size: 14px !important;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .livePage .baseOnlyField {
+    height: clamp(220px, 64vw, 270px);
+    min-height: 220px;
+    max-height: 270px;
+    aspect-ratio: auto;
+  }
+
+  .livePage .baseDirt {
+    width: clamp(100px, 31vw, 120px);
+    height: clamp(100px, 31vw, 120px);
+  }
+
+  .livePage .fieldZone {
+    width: 46px;
+    height: 36px;
+    min-height: 36px;
+    font-size: 10px !important;
+    touch-action: manipulation;
+  }
+
+  .livePage .baseOnly {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    font-size: 8px;
+    touch-action: manipulation;
+  }
+
+  .livePage .baseOnly.occupied {
+    width: 42px;
+    height: 42px;
+  }
+
+  .livePage .baseOnly.selected {
+    width: 46px;
+    height: 46px;
+  }
+
+  .livePage .selectedBaseRunner {
+    align-items: stretch;
+    padding: 10px;
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .livePage .selectedBaseRunner > span {
+    width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .livePage .runnerActionButtons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .livePage .runnerActionButtons .button,
+  .livePage .selectedBaseRunner button {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 9px 8px;
+    font-size: 14px;
+  }
+
+  .livePage .runnerLegend {
+    gap: 8px;
+  }
+
+  .livePage .runnerItem {
+    gap: 8px;
+  }
+
+  .livePage .gameControls .controlRow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .livePage .gameControls .button {
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px 8px;
+    font-size: 14px;
+  }
+
+  .livePage .cameraPanel {
+    margin-bottom: 10px;
+  }
+
+  .livePage .statsBottomAction {
+    max-width: none;
+  }
+}
+
+@media (max-width: 370px) {
+  .livePage .actionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .livePage .scoreButton {
+    font-size: 15px !important;
+  }
+
+  .livePage .scorekeeperScore {
+    grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr);
+    gap: 5px;
+    padding: 8px;
+  }
+}
