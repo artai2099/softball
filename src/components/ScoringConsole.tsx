@@ -138,8 +138,6 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
         </div>
       </section>
 
-      {canScore && <YouTubeStreamControl gameId={game.id} />}
-
       <div className="liveGrid">
 
         <main>
@@ -569,7 +567,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
       </div>
 
-
+      {canScore && <YouTubeStreamControl gameId={game.id} />}
 
     </div>
   );
