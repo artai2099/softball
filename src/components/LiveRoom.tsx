@@ -796,6 +796,7 @@ export function LiveRoom({
         }
 
         .gdpAudioButton {
+          pointer-events: auto;
           width: 38px;
           height: 38px;
           display: grid;
