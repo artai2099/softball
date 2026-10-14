@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scoreEventSchema } from "../src/lib/scoring";
+import { runnerActionSchema, scoreEventSchema } from "../src/lib/scoring";
 
 const base = { idempotencyKey: "8e583fe5-35ec-4ea7-abcb-23bd6a713fc3", expectedVersion: 0 };
 
@@ -22,8 +22,6 @@ describe("scoreEventSchema", () => {
   });
 });
 
-
-import { runnerActionSchema } from "../src/lib/scoring";
 
 describe("runnerActionSchema", () => {
   const runnerBase = { idempotencyKey: "8e583fe5-35ec-4ea7-abcb-23bd6a713fc3", expectedVersion: 3 };
