@@ -184,7 +184,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
         <main>
 
-          <div className="pageHead" style={{ alignItems: "center", marginBottom: 8 }}>
+          <div className="pageHead scorekeeperStatus" style={{ alignItems: "center", marginBottom: 8 }}>
             <div className="liveLabel">
               {game.status==="live"
                 ? "● Live scorecast"
@@ -197,7 +197,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
           </div>
 
 
-          <section className="panel">
+          <section className="panel batterPanel">
 
             <div className="pageHead">
 
@@ -259,7 +259,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
 
           {canScore ? (
-            <section className="panel">
+            <section className="panel pitchPlayPanel">
 
               <div className="liveLabel">
                 Pitch / play
@@ -339,7 +339,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
 
           {canScore&&pending&&(
-            <section className="panel">
+            <section className="panel pendingPlayPanel">
 
               <h3>{labels[pending]}</h3>
 
@@ -401,7 +401,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
 
           {message&&(
-            <p className={message.includes("recorded") || message.includes("advanced") ? "notice" : "error"} role="alert">
+            <p className={`runnerActionMessage ${message.includes("recorded") || message.includes("advanced") ? "notice" : "error"}`} role="alert">
               {message}
             </p>
           )}
@@ -411,7 +411,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
         <aside>
 
-          <section className="panel">
+          <section className="panel baseRunnersPanel">
 
             <div className="liveLabel">
               Base runners
