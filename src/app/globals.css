@@ -6280,3 +6280,105 @@
     animation: none;
   }
 }
+
+
+/* Compact At Bat panel on phones: preserve all information with less vertical space. */
+@media (max-width: 680px) {
+  .livePage .batterPanel {
+    padding: 10px 12px;
+    margin-top: 8px;
+  }
+
+  .livePage .batterPanel .pageHead {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .livePage .batterPanel .pageHead > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .livePage .batterPanel .liveLabel {
+    margin: 0 0 3px;
+    font-size: 10px !important;
+    line-height: 1.15;
+  }
+
+  .livePage .batterPanel .batterLine {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    margin-top: 0;
+    font-size: 20px !important;
+    line-height: 1.2 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .livePage .batterPanel .batterPicker {
+    flex: 0 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+
+  .livePage .batterPanel .batterPicker .notice {
+    padding: 7px 8px;
+    font-size: 11px !important;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .livePage .batterPanel .batterPicker select {
+    width: min(40vw, 190px);
+    min-width: 0;
+    min-height: 38px;
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+
+  .livePage .batterPanel .count {
+    gap: 5px;
+    margin-top: 5px;
+  }
+
+  .livePage .batterPanel .count span {
+    flex: 0 1 auto;
+    min-width: 40px;
+    padding: 4px 7px;
+    border-radius: 6px;
+    font-size: 11px !important;
+    line-height: 1.1;
+  }
+}
+
+@media (max-width: 370px) {
+  .livePage .batterPanel {
+    padding: 9px 10px;
+  }
+
+  .livePage .batterPanel .pageHead {
+    gap: 5px;
+  }
+
+  .livePage .batterPanel .batterLine {
+    font-size: 20px !important;
+  }
+
+  .livePage .batterPanel .batterPicker select {
+    width: 36vw;
+    font-size: 12px;
+  }
+
+  .livePage .batterPanel .count {
+    gap: 4px;
+  }
+
+  .livePage .batterPanel .count span {
+    min-width: 36px;
+    padding: 4px 5px;
+    font-size: 10px !important;
+  }
+}
