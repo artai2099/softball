@@ -87,7 +87,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       const contentType=response.headers.get("content-type")||"";
       const body=contentType.includes("application/json") ? await response.json() : {error:`Scoring server returned HTTP ${response.status}`};
       if(response.status===409){const latest=await supabase.from("games").select("*").eq("id",game.id).single();if(latest.data)setGame(latest.data as Game);throw new Error("Another scorekeeper updated the game. The latest score has been loaded.");}
-      if(!response.ok)throw new Error(body.error||"Play could not be recorded"); const updatedGame=body.game as Game; setGame(updatedGame); setBatterId(updatedGame.current_batter_id||null); setPending(null);setPositions([]); if(updatedGame.status==="final"){window.location.assign("/dashboard");}
+      if(!response.ok)throw new Error(body.error||"Play could not be recorded"); const updatedGame=body.game as Game; setGame(updatedGame); setBatterId(updatedGame.current_batter_id||null); setPending(null);setPositions([]);setRunnerModalOpen(false);setSelectedRunnerBase(null); if(updatedGame.status==="final"){window.location.assign("/dashboard");}
     }catch(error){setMessage(error instanceof Error?error.message:"Play could not be recorded");}finally{setSaving(false)}
   }
   async function runnerAction(action:"advance"|"score"|"out") {
@@ -456,13 +456,9 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                         : `${base}B empty`
                     }
                     onClick={() => {
-                      if (runnerId) {
-                        setSelectedRunnerBase(base);
-                        setRunnerModalOpen(canScore && game.status !== "final");
-                      } else {
-                        setSelectedRunnerBase(null);
-                        setRunnerModalOpen(false);
-                      }
+                      setSelectedRunnerBase(base);
+                      setMessage("");
+                      setRunnerModalOpen(canScore && game.status !== "final");
                     }}
                   >
                     {runner
@@ -646,7 +642,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
         document.body
       )}
 
-      {canScore && runnerModalOpen && selectedRunnerBase && game.bases?.[selectedRunnerBase] && typeof document !== "undefined" && createPortal(
+      {canScore && runnerModalOpen && selectedRunnerBase && typeof document !== "undefined" && createPortal(
         <div
           className="scoringActionModalBackdrop"
           onMouseDown={(event) => {
@@ -664,8 +660,14 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
           >
             <div className="scoringActionModalHeader">
               <div>
-                <div className="scoringActionModalEyebrow">BASE RUNNING</div>
-                <h2 id="runner-action-modal-title">Runner at {selectedRunnerBase}B</h2>
+                <div className="scoringActionModalEyebrow">
+                  {game.bases?.[selectedRunnerBase] ? "BASE RUNNING" : "RECORD AT-BAT"}
+                </div>
+                <h2 id="runner-action-modal-title">
+                  {game.bases?.[selectedRunnerBase]
+                    ? `Runner at ${selectedRunnerBase}B`
+                    : "Record batter result"}
+                </h2>
               </div>
               <button
                 type="button"
@@ -677,28 +679,81 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
               </button>
             </div>
 
-            <p className="scoringActionModalInstruction">
-              Choose the result for this runner. Hit moves safely to the next base; a hit from 3B scores a run. Out records a runner out.
-            </p>
+            {game.bases?.[selectedRunnerBase] ? (
+              <>
+                <p className="scoringActionModalInstruction">
+                  Choose the result for this runner. Hit advances safely to the next base; a hit from 3B scores a run. Out records a runner out.
+                </p>
 
-            <div className="runnerOutcomeButtons">
-              <button
-                type="button"
-                className="button primary runnerChoiceButton"
-                disabled={!canScore || saving || game.status === "final" || (selectedRunnerBase !== "3" && Boolean(game.bases[selectedRunnerBase === "1" ? "2" : "3"]))}
-                onClick={() => void runnerAction(selectedRunnerBase === "3" ? "score" : "advance")}
-              >
-                {saving ? "Saving…" : "Hit"}
-              </button>
-              <button
-                type="button"
-                className="button red runnerChoiceButton"
-                disabled={!canScore || saving || game.status === "final"}
-                onClick={() => void runnerAction("out")}
-              >
-                {saving ? "Saving…" : "Out"}
-              </button>
-            </div>
+                <div className="runnerOutcomeButtons">
+                  <button
+                    type="button"
+                    className="button primary runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final" || (selectedRunnerBase !== "3" && Boolean(game.bases[selectedRunnerBase === "1" ? "2" : "3"]))}
+                    onClick={() => void runnerAction(selectedRunnerBase === "3" ? "score" : "advance")}
+                  >
+                    {saving ? "Saving…" : "Hit"}
+                  </button>
+                  <button
+                    type="button"
+                    className="button red runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final"}
+                    onClick={() => void runnerAction("out")}
+                  >
+                    {saving ? "Saving…" : "Out"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="scoringActionModalInstruction">
+                  No runner is on {selectedRunnerBase}B. Record the batter's hit below. GameDay Pro will move runners and update the score automatically.
+                </p>
+
+                <div className="runnerOutcomeButtons batterResultButtons">
+                  <button
+                    type="button"
+                    className="button primary runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final"}
+                    onClick={() => { setRunnerModalOpen(false); setSelectedRunnerBase(null); void record("single"); }}
+                  >
+                    {saving ? "Saving…" : "Hit · Single"}
+                  </button>
+                  <button
+                    type="button"
+                    className="button secondary runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final"}
+                    onClick={() => { setRunnerModalOpen(false); setSelectedRunnerBase(null); void record("double"); }}
+                  >
+                    Double
+                  </button>
+                  <button
+                    type="button"
+                    className="button secondary runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final"}
+                    onClick={() => { setRunnerModalOpen(false); setSelectedRunnerBase(null); void record("triple"); }}
+                  >
+                    Triple
+                  </button>
+                  <button
+                    type="button"
+                    className="button primary runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final"}
+                    onClick={() => { setRunnerModalOpen(false); setSelectedRunnerBase(null); void record("home_run"); }}
+                  >
+                    Home Run
+                  </button>
+                  <button
+                    type="button"
+                    className="button red runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final"}
+                    onClick={() => { setRunnerModalOpen(false); setSelectedRunnerBase(null); choose("out"); }}
+                  >
+                    Out
+                  </button>
+                </div>
+              </>
+            )}
 
             {message && <p className="scoringActionModalError" role="alert">{message}</p>}
           </section>
