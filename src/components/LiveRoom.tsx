@@ -20,6 +20,7 @@ export function LiveRoom({
   const [status, setStatus] = useState("Ready");
   const [active, setActive] = useState(false);
   const [muted, setMuted] = useState(false);
+  const mutedRef = useRef(false);
   const roomRef = useRef<Room | null>(null);
   const mediaRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +81,7 @@ export function LiveRoom({
           element.classList.add("gdpStreamAudio");
 
           if (element instanceof HTMLMediaElement) {
-            element.muted = muted;
+            element.muted = role === "broadcaster" ? true : mutedRef.current;
           }
         }
 
@@ -161,6 +162,11 @@ export function LiveRoom({
         }
       }
 
+      // Apply the current mute state before publishing the microphone.
+      if (tracks.some((track) => track.kind === Track.Kind.Audio)) {
+        await room.localParticipant.setMicrophoneEnabled(!mutedRef.current);
+      }
+
       for (const track of tracks) {
         await room.localParticipant.publishTrack(track);
 
@@ -172,7 +178,7 @@ export function LiveRoom({
           element.classList.add("gdpStreamAudio");
 
           if (element instanceof HTMLMediaElement) {
-            element.muted = muted;
+            element.muted = role === "broadcaster" ? true : mutedRef.current;
           }
         }
 
@@ -234,6 +240,7 @@ export function LiveRoom({
         element.muted = nextMuted;
       });
 
+      mutedRef.current = nextMuted;
       setMuted(nextMuted);
 
       setStatus(
