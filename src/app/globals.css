@@ -4695,6 +4695,7 @@
 /* Runner information */
 .selectedBaseRunner {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -4706,6 +4707,18 @@
   color: #fff;
   font-size: 11px;
   font-weight: 900;
+}
+
+.runnerActionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.runnerActionButtons .button {
+  flex: 1 1 auto;
+  min-width: 72px;
 }
 
 .selectedBaseRunner button,
