@@ -256,6 +256,51 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
           )}
 
 
+          {canScore&&(
+            <section className="panel gameControls">
+
+              <div className="liveLabel">
+                Game controls
+              </div>
+
+              <div className="controlRow">
+
+                <button
+                  type="button"
+                  className="button secondary"
+                  disabled={saving||game.status==="final"}
+                  onClick={()=>void undo()}
+                >
+                  Undo
+                </button>
+
+
+                {game.status==="final" ? (
+                  <button
+                    type="button"
+                    className="button primary"
+                    disabled={saving}
+                    onClick={()=>void reopen()}
+                  >
+                    Reopen game
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="button red"
+                    disabled={saving}
+                    onClick={()=>void finish()}
+                  >
+                    Finish game
+                  </button>
+                )}
+
+              </div>
+
+            </section>
+          )}
+
+
           {canScore&&pending&&(
             <section className="panel">
 
@@ -504,49 +549,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
             />
           )}
 
-          {canScore&&(
-            <section className="panel gameControls">
 
-              <div className="liveLabel">
-                Game controls
-              </div>
-
-              <div className="controlRow">
-
-                <button
-                  type="button"
-                  className="button secondary"
-                  disabled={saving||game.status==="final"}
-                  onClick={()=>void undo()}
-                >
-                  Undo
-                </button>
-
-
-                {game.status==="final" ? (
-                  <button
-                    type="button"
-                    className="button primary"
-                    disabled={saving}
-                    onClick={()=>void reopen()}
-                  >
-                    Reopen game
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="button red"
-                    disabled={saving}
-                    onClick={()=>void finish()}
-                  >
-                    Finish game
-                  </button>
-                )}
-
-              </div>
-
-            </section>
-          )}
 
 
 
