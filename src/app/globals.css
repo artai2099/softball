@@ -6382,3 +6382,48 @@
     font-size: 10px !important;
   }
 }
+
+/* Foreground two-choice runner action popup. */
+.runnerActionModal {
+  width: min(460px, 100%);
+}
+
+.runnerOutcomeButtons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.runnerOutcomeButtons .runnerChoiceButton {
+  min-width: 0;
+  min-height: 68px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  font-size: 20px;
+  line-height: 1.1;
+  font-weight: 950;
+  touch-action: manipulation;
+}
+
+.runnerOutcomeButtons .runnerChoiceButton:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+@media (max-width: 680px) {
+  .runnerActionModal {
+    padding: 18px;
+  }
+
+  .runnerOutcomeButtons {
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .runnerOutcomeButtons .runnerChoiceButton {
+    min-height: 72px;
+    font-size: 21px;
+  }
+}
+
