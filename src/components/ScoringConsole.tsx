@@ -122,11 +122,16 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       <section className="cameraPanel">
         <div className="cameraPanelHead">
           <div className="cameraPanelSpacer" aria-hidden="true" />
-          <details className="cameraDetails" open>
+          <details className="cameraDetails">
             <summary className="gameCameraButton">
-  <span className="gameCameraIcon" aria-hidden="true">🎥</span>
-  <span>Watch Live or Record Game</span>
-</summary>
+              <span className="gameCameraIcon" aria-hidden="true">▶</span>
+              <span className="gameCameraCopy">
+                <strong>Game Camera</strong>
+                <small>Live video and broadcast controls</small>
+              </span>
+              <span className="gameCameraBadge">VIDEO</span>
+              <span className="gameCameraChevron" aria-hidden="true" />
+            </summary>
             <div className="cameraDetailsBody">
               <LiveRoom
                 gameId={game.id}
