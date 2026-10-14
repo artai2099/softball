@@ -5742,3 +5742,136 @@
     font-size: 16px;
   }
 }
+
+
+/* GameDay Pro — professional live camera control */
+.livePage .cameraPanel {
+  max-width: 1220px;
+  margin: 0 auto 18px;
+}
+.livePage .cameraPanelHead {
+  display: block !important;
+}
+.livePage .cameraDetails {
+  display: block;
+  width: 100% !important;
+  border: 1px solid #26364b;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0b1e34 0%, #091321 60%, #101327 100%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .22);
+}
+.livePage .cameraDetails summary.gameCameraButton {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  gap: 14px !important;
+  width: 100%;
+  min-height: 82px !important;
+  padding: 14px 18px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #f8fafc !important;
+  text-align: left !important;
+  white-space: normal !important;
+  cursor: pointer;
+}
+.livePage .cameraDetails summary.gameCameraButton:hover {
+  background: rgba(255,255,255,.035) !important;
+}
+.livePage .cameraDetails summary.gameCameraButton:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: -3px;
+}
+.livePage .gameCameraIcon {
+  display: grid !important;
+  place-items: center;
+  width: 46px !important;
+  height: 46px !important;
+  flex: 0 0 46px !important;
+  border: 1px solid rgba(167,139,250,.35);
+  border-radius: 13px;
+  background: linear-gradient(145deg, #7137d7, #44208c);
+  color: white !important;
+  font-size: 17px;
+  box-shadow: 0 6px 18px rgba(124,58,237,.22);
+}
+.livePage .gameCameraCopy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+.livePage .gameCameraCopy strong {
+  display: block;
+  color: #f8fafc;
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: -.02em;
+}
+.livePage .gameCameraCopy small {
+  display: block;
+  color: #a6b4c7;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+.livePage .gameCameraBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid #34445a;
+  border-radius: 999px;
+  background: rgba(15,23,42,.7);
+  color: #cbd5e1 !important;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+.livePage .gameCameraChevron {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  margin: 0 3px 4px 4px;
+  border-right: 2px solid #aebbd0;
+  border-bottom: 2px solid #aebbd0;
+  transform: rotate(45deg);
+  transition: transform .18s ease;
+}
+.livePage .cameraDetails[open] summary.gameCameraButton {
+  border-bottom: 1px solid #26364b !important;
+  background: rgba(255,255,255,.025) !important;
+}
+.livePage .cameraDetails[open] .gameCameraChevron {
+  transform: rotate(225deg);
+  margin-bottom: -4px;
+}
+.livePage .cameraDetailsBody {
+  padding: 14px !important;
+}
+.livePage .cameraDetailsBody .gdpStream {
+  border-color: #26364b;
+  border-radius: 12px;
+}
+@media (max-width: 700px) {
+  .livePage .cameraPanel { margin-bottom: 14px; }
+  .livePage .cameraDetails summary.gameCameraButton {
+    min-height: 74px !important;
+    gap: 11px !important;
+    padding: 12px !important;
+  }
+  .livePage .gameCameraIcon {
+    width: 40px !important;
+    height: 40px !important;
+    flex-basis: 40px !important;
+  }
+  .livePage .gameCameraCopy strong { font-size: 15px; }
+  .livePage .gameCameraCopy small { font-size: 11px; }
+  .livePage .gameCameraBadge { display: none; }
+  .livePage .cameraDetailsBody { padding: 8px !important; }
+}
