@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { defensivePositions } from "@/lib/scoring";
 import type { Game,GameEvent,GameLineupPlayerView } from "@/lib/types";
@@ -124,6 +125,27 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       setSaving(false);
     }
   }
+
+  useEffect(() => {
+    if (!pending) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setPending(null);
+        setPositions([]);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    document.querySelector<HTMLButtonElement>(".scoringActionModal .position")?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [pending]);
 
   function choose(result:string){if(["out","error","double_play","triple_play"].includes(result)){setPending(result);setPositions([])}else void record(result)}
   function selectPosition(position:string){setPositions(c=>c.length<required?[...c,position]:[...c.slice(0,-1),position])}
@@ -331,68 +353,6 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                     Finish game
                   </button>
                 )}
-
-              </div>
-
-            </section>
-          )}
-
-
-          {canScore&&pending&&(
-            <section className="panel pendingPlayPanel">
-
-              <h3>{labels[pending]}</h3>
-
-              <p className="notice">
-                Select {required} defensive position
-                {required>1 ? "s" : ""}
-                {" "}in out order.
-              </p>
-
-              <div className="defenseGrid">
-
-                {defensivePositions.map(position=>(
-                  <button
-                    type="button"
-                    className={`position ${
-                      positions.includes(position) ? "selected" : ""
-                    }`}
-                    key={position}
-                    onClick={()=>selectPosition(position)}
-                  >
-                    {position}
-                  </button>
-                ))}
-
-              </div>
-
-
-              <div className="pageHead actionFooter">
-
-                <span>
-                  {positions.join(" → ")||"No position selected"}
-                </span>
-
-                <div>
-
-                  <button
-                    type="button"
-                    className="button secondary"
-                    onClick={()=>setPending(null)}
-                  >
-                    Cancel
-                  </button>{" "}
-
-                  <button
-                    type="button"
-                    className="button red"
-                    disabled={positions.length!==required||saving}
-                    onClick={()=>void record(pending,positions)}
-                  >
-                    Record play
-                  </button>
-
-                </div>
 
               </div>
 
@@ -641,6 +601,92 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       <div className="statsBottomAction">
 
       </div>
+
+      {canScore && pending && typeof document !== "undefined" && createPortal(
+        <div
+          className="scoringActionModalBackdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setPending(null);
+              setPositions([]);
+            }
+          }}
+        >
+          <section
+            className="scoringActionModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="scoring-action-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="scoringActionModalHeader">
+              <div>
+                <div className="scoringActionModalEyebrow">RECORD PLAY</div>
+                <h2 id="scoring-action-modal-title">{labels[pending]}</h2>
+              </div>
+              <button
+                type="button"
+                className="scoringActionModalClose"
+                aria-label="Close position menu"
+                onClick={() => {
+                  setPending(null);
+                  setPositions([]);
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="scoringActionModalInstruction">
+              Select {required} defensive position{required > 1 ? "s" : ""} in play order.
+            </p>
+
+            <div className="defenseGrid scoringActionModalPositions">
+              {defensivePositions.map(position => (
+                <button
+                  type="button"
+                  className={`position ${positions.includes(position) ? "selected" : ""}`}
+                  key={position}
+                  aria-pressed={positions.includes(position)}
+                  onClick={() => selectPosition(position)}
+                >
+                  {position}
+                </button>
+              ))}
+            </div>
+
+            <div className="scoringActionModalSummary">
+              <span className="scoringActionModalEyebrow">PLAY SEQUENCE</span>
+              <strong>{positions.length ? positions.join(" → ") : "Select the fielding position"}</strong>
+              <span className="scoringActionModalStep">{positions.length} of {required} selected</span>
+            </div>
+
+            <div className="scoringActionModalFooter">
+              <button
+                type="button"
+                className="button secondary"
+                disabled={saving}
+                onClick={() => {
+                  setPending(null);
+                  setPositions([]);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="button red"
+                disabled={positions.length !== required || saving}
+                onClick={() => void record(pending, positions)}
+              >
+                {saving ? "Saving…" : "Record play"}
+              </button>
+            </div>
+            {message && <p className="scoringActionModalError" role="alert">{message}</p>}
+          </section>
+        </div>,
+        document.body
+      )}
 
       {canScore && <YouTubeStreamControl gameId={game.id} />}
 
