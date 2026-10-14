@@ -88,6 +88,43 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       if(!response.ok)throw new Error(body.error||"Play could not be recorded"); const updatedGame=body.game as Game; setGame(updatedGame); setBatterId(updatedGame.current_batter_id||null); setPending(null);setPositions([]); if(updatedGame.status==="final"){window.location.assign("/dashboard");}
     }catch(error){setMessage(error instanceof Error?error.message:"Play could not be recorded");}finally{setSaving(false)}
   }
+  async function runnerAction(action:"advance"|"score"|"out") {
+    if (!selectedRunnerBase) return;
+    const baseFrom = selectedRunnerBase;
+    const baseTo = action === "advance" ? (baseFrom === "1" ? "2" : baseFrom === "2" ? "3" : undefined) : undefined;
+    setSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/games/${game.id}/runner-action`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action,
+          baseFrom,
+          ...(baseTo ? { baseTo } : {}),
+          idempotencyKey: crypto.randomUUID(),
+          expectedVersion: game.version,
+        }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (response.status === 409) {
+        const latest = await supabase.from("games").select("*").eq("id", game.id).single();
+        if (latest.data) setGame(latest.data as Game);
+        throw new Error("Another scorekeeper updated the game. The latest score has been loaded.");
+      }
+      if (!response.ok) throw new Error(body.error || "Runner action could not be recorded");
+      const updatedGame = body.game as Game;
+      setGame(updatedGame);
+      setBatterId(updatedGame.current_batter_id || null);
+      setSelectedRunnerBase(action === "advance" && baseTo ? baseTo : null);
+      setMessage(action === "advance" ? `Runner advanced to ${baseTo}B.` : action === "score" ? "Run recorded." : "Runner out recorded.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Runner action could not be recorded");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function choose(result:string){if(["out","error","double_play","triple_play"].includes(result)){setPending(result);setPositions([])}else void record(result)}
   function selectPosition(position:string){setPositions(c=>c.length<required?[...c,position]:[...c.slice(0,-1),position])}
   async function undo(){if(game.status==="final")return;setSaving(true);setMessage("");try{const r=await fetch(`/api/games/${game.id}/undo`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({expectedVersion:game.version})});const b=await r.json();if(!r.ok)throw new Error(b.error||"Undo failed");setGame(b.game as Game);setBatterId((b.game as Game).current_batter_id||null)}catch(e){setMessage(e instanceof Error?e.message:"Undo failed")}finally{setSaving(false)}}
@@ -488,12 +525,40 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                     {selectedRunnerBase}B · #{runner.jersey_number} {runner.first_name} {runner.last_name}
                   </span>
 
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRunnerBase(null)}
-                  >
-                    Clear
-                  </button>
+                  <div className="runnerActionButtons">
+                    <button
+                      type="button"
+                      className="button secondary"
+                      disabled={!canScore || saving || game.status === "final" || selectedRunnerBase === "3" || Boolean(game.bases[selectedRunnerBase === "1" ? "2" : "3"])}
+                      onClick={() => void runnerAction("advance")}
+                    >
+                      Advance
+                    </button>
+                    <button
+                      type="button"
+                      className="button primary"
+                      disabled={!canScore || saving || game.status === "final"}
+                      onClick={() => void runnerAction("score")}
+                    >
+                      Score
+                    </button>
+                    <button
+                      type="button"
+                      className="button red"
+                      disabled={!canScore || saving || game.status === "final"}
+                      onClick={() => void runnerAction("out")}
+                    >
+                      Runner out
+                    </button>
+                    <button
+                      type="button"
+                      className="button secondary"
+                      disabled={saving}
+                      onClick={() => setSelectedRunnerBase(null)}
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
               );
             })()}
