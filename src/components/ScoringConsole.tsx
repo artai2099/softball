@@ -401,7 +401,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
 
           {message&&(
-            <p className="error" role="alert">
+            <p className={message.includes("recorded") || message.includes("advanced") ? "notice" : "error"} role="alert">
               {message}
             </p>
           )}
