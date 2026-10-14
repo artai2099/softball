@@ -6427,3 +6427,19 @@
   }
 }
 
+/* Empty-base popup adds plate-appearance results without crowding phones. */
+.batterResultButtons .runnerChoiceButton:last-child {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 680px) {
+  .batterResultButtons .runnerChoiceButton {
+    min-height: 58px;
+    font-size: 16px;
+  }
+
+  .batterResultButtons .runnerChoiceButton:last-child {
+    min-height: 52px;
+  }
+}
+
