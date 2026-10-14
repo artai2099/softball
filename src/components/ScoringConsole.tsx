@@ -483,8 +483,10 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                       runnerId ? "occupied" : ""
                     } ${selected ? "selected" : ""}`}
                     aria-label={
-                      runner
-                        ? `${base}B runner #${runner.jersey_number}`
+                      runnerId
+                        ? runner
+                          ? `${base}B runner #${runner.jersey_number}`
+                          : `${base}B runner`
                         : `${base}B empty`
                     }
                     onClick={() =>
@@ -517,12 +519,12 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                 player => player.player_id === runnerId,
               );
 
-              if (!runner) return null;
-
               return (
                 <div className="selectedBaseRunner">
                   <span>
-                    {selectedRunnerBase}B · #{runner.jersey_number} {runner.first_name} {runner.last_name}
+                    {runner
+                      ? `${selectedRunnerBase}B · #${runner.jersey_number} ${runner.first_name} ${runner.last_name}`
+                      : `${selectedRunnerBase}B · Runner on base`}
                   </span>
 
                   <div className="runnerActionButtons">
