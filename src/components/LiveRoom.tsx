@@ -162,11 +162,6 @@ export function LiveRoom({
         }
       }
 
-      // Apply the current mute state before publishing the microphone.
-      if (tracks.some((track) => track.kind === Track.Kind.Audio)) {
-        await room.localParticipant.setMicrophoneEnabled(!mutedRef.current);
-      }
-
       for (const track of tracks) {
         await room.localParticipant.publishTrack(track);
 
@@ -178,11 +173,18 @@ export function LiveRoom({
           element.classList.add("gdpStreamAudio");
 
           if (element instanceof HTMLMediaElement) {
-            element.muted = role === "broadcaster" ? true : mutedRef.current;
+            // Never play the broadcaster's own microphone back locally.
+            element.muted = true;
           }
         }
 
         mediaRef.current?.appendChild(element);
+      }
+
+      // If the user muted before capture finished, apply it after the
+      // microphone track is published so LiveKit disables the real mic.
+      if (mutedRef.current && tracks.some((track) => track.kind === Track.Kind.Audio)) {
+        await room.localParticipant.setMicrophoneEnabled(false);
       }
     }
 
