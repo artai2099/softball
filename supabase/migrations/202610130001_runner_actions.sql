@@ -48,7 +48,7 @@ begin
     if p_base_from='3' then
       raise exception 'A runner on third must score or be recorded out' using errcode='22000';
     end if;
-    if p_base_to is distinct from case p_base_from when '1' then '2' else '3' end then
+    if p_base_to is distinct from (case p_base_from when '1' then '2' else '3' end) then
       raise exception 'Runner must advance to the next base' using errcode='22000';
     end if;
     if g.bases->>p_base_to is not null then
