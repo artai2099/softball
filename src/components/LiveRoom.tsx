@@ -749,22 +749,21 @@ export function LiveRoom({
           background: rgba(255, 255, 255, 0.12);
         }
 
+        /* Keep the utility controls away from the scorebug and team names. */
         .gdpStreamTopControls {
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 6;
+          top: 50%;
+          right: 14px;
+          left: auto;
+          z-index: 9;
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          padding: 14px;
+          justify-content: center;
+          width: auto;
+          padding: 0;
+          transform: translateY(-50%);
           pointer-events: none;
-          background: linear-gradient(
-            to bottom,
-            rgba(0, 0, 0, 0.45),
-            transparent
-          );
+          background: transparent;
         }
 
         .gdpStreamBrand {
@@ -791,14 +790,23 @@ export function LiveRoom({
 
         .gdpStreamTopActions {
           display: flex;
+          flex-direction: column;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
+          padding: 7px;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 16px;
+          background: rgba(5, 7, 10, 0.62);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          pointer-events: auto;
         }
 
         .gdpAudioButton {
           pointer-events: auto;
-          width: 38px;
-          height: 38px;
+          width: 44px;
+          height: 44px;
           display: grid;
           place-items: center;
           padding: 0;
@@ -819,8 +827,8 @@ export function LiveRoom({
 
         .gdpFullscreenButton {
           pointer-events: auto;
-          width: 36px;
-          height: 36px;
+          width: 44px;
+          height: 44px;
           display: grid;
           place-items: center;
           border: 1px solid rgba(255, 255, 255, 0.16);
@@ -1009,8 +1017,17 @@ export function LiveRoom({
           }
 
           .gdpStreamTopControls {
-            padding: 10px;
-            justify-content: flex-end;
+            top: 50%;
+            right: 10px;
+            left: auto;
+            padding: 0;
+            transform: translateY(-50%);
+            justify-content: center;
+          }
+
+          .gdpStreamTopActions {
+            gap: 8px;
+            padding: 6px;
           }
 
           .gdpStreamBottom {
