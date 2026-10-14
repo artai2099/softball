@@ -21,3 +21,24 @@ describe("scoreEventSchema", () => {
     expect(scoreEventSchema.safeParse({ ...base, expectedVersion: -1, result: "single" }).success).toBe(false);
   });
 });
+
+
+import { runnerActionSchema } from "../src/lib/scoring";
+
+describe("runnerActionSchema", () => {
+  const runnerBase = { idempotencyKey: "8e583fe5-35ec-4ea7-abcb-23bd6a713fc3", expectedVersion: 3 };
+  it("accepts advancing a runner to the next base", () => {
+    expect(runnerActionSchema.safeParse({ ...runnerBase, action: "advance", baseFrom: "1", baseTo: "2" }).success).toBe(true);
+    expect(runnerActionSchema.safeParse({ ...runnerBase, action: "advance", baseFrom: "2", baseTo: "3" }).success).toBe(true);
+  });
+  it("rejects skipping bases or advancing home from third", () => {
+    expect(runnerActionSchema.safeParse({ ...runnerBase, action: "advance", baseFrom: "1", baseTo: "3" }).success).toBe(false);
+    expect(runnerActionSchema.safeParse({ ...runnerBase, action: "advance", baseFrom: "3" }).success).toBe(false);
+  });
+  it("accepts scoring and runner-out actions from any base", () => {
+    for (const baseFrom of ["1", "2", "3"] as const) {
+      expect(runnerActionSchema.safeParse({ ...runnerBase, action: "score", baseFrom }).success).toBe(true);
+      expect(runnerActionSchema.safeParse({ ...runnerBase, action: "out", baseFrom }).success).toBe(true);
+    }
+  });
+});
