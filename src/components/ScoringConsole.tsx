@@ -715,7 +715,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                     type="button"
                     className="button primary runnerChoiceButton"
                     disabled={!canScore || saving || game.status === "final"}
-                    onClick={() => { setRunnerModalOpen(false); setSelectedRunnerBase(null); void record("single"); }}
+                    onClick={() => void record("single")}
                   >
                     {saving ? "Saving…" : "Hit · Single"}
                   </button>
@@ -723,7 +723,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                     type="button"
                     className="button secondary runnerChoiceButton"
                     disabled={!canScore || saving || game.status === "final"}
-                    onClick={() => { setRunnerModalOpen(false); setSelectedRunnerBase(null); void record("double"); }}
+                    onClick={() => void record("double")}
                   >
                     Double
                   </button>
@@ -731,7 +731,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                     type="button"
                     className="button secondary runnerChoiceButton"
                     disabled={!canScore || saving || game.status === "final"}
-                    onClick={() => { setRunnerModalOpen(false); setSelectedRunnerBase(null); void record("triple"); }}
+                    onClick={() => void record("triple")}
                   >
                     Triple
                   </button>
@@ -739,7 +739,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                     type="button"
                     className="button primary runnerChoiceButton"
                     disabled={!canScore || saving || game.status === "final"}
-                    onClick={() => { setRunnerModalOpen(false); setSelectedRunnerBase(null); void record("home_run"); }}
+                    onClick={() => void record("home_run")}
                   >
                     Home Run
                   </button>
