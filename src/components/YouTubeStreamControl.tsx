@@ -66,67 +66,87 @@ export function YouTubeStreamControl({ gameId }: { gameId: string }) {
   }
 
   return (
-    <section className="panel youtubeStreamControl" aria-labelledby="youtube-stream-heading">
-      <div className="youtubeStreamTop">
-        <div>
-          <div className="liveLabel">LIVE BROADCAST</div>
-          <h3 id="youtube-stream-heading">YouTube Live</h3>
-          <p>
-            Send the live camera and GameDay scoreboard to your YouTube stream.
-          </p>
-        </div>
-        <span className={status?.active ? "youtubeStreamStatus active" : "youtubeStreamStatus"}>
-          <span aria-hidden="true" />
-          {status?.active ? "Broadcast active" : "Not streaming"}
+    <details className="panel youtubeStreamControl">
+      <summary className="youtubeStreamSummary">
+        <span className="youtubeStreamSummaryTitle">
+          <span className="youtubeStreamIcon" aria-hidden="true">▶</span>
+          <span>
+            <span className="liveLabel">LIVE BROADCAST</span>
+            <strong>YouTube Live</strong>
+          </span>
         </span>
+        <span className="youtubeStreamSummaryMeta">
+          <span className={status?.active ? "youtubeStreamStatus active" : "youtubeStreamStatus"}>
+            <span aria-hidden="true" />
+            {status?.active ? "Broadcast active" : "Not streaming"}
+          </span>
+          <span className="youtubeStreamChevron" aria-hidden="true" />
+        </span>
+      </summary>
+
+      <div className="youtubeStreamBody">
+        <p className="youtubeStreamDescription">
+          Send the live camera and GameDay scoreboard to your YouTube stream.
+        </p>
+
+        {!status ? (
+          <p className="notice">Checking YouTube setup…</p>
+        ) : status.active ? (
+          <button
+            type="button"
+            className="button youtubeStopButton"
+            disabled={busy}
+            onClick={() => void toggleBroadcast()}
+          >
+            {busy ? "Please wait…" : "■  Stop YouTube Stream"}
+          </button>
+        ) : !status.configured ? (
+          <p className="notice">
+            Setup required: add YOUTUBE_STREAM_KEY in the Vercel server environment, then redeploy.
+          </p>
+        ) : !status.canBroadcast ? (
+          <p className="notice">
+            To broadcast, make this game Public and start the game first.
+          </p>
+        ) : (
+          <button
+            type="button"
+            className="button youtubeStartButton"
+            disabled={busy}
+            onClick={() => void toggleBroadcast()}
+          >
+            {busy ? "Please wait…" : "▶  Stream to YouTube"}
+          </button>
+        )}
+
+        {status?.watchUrl && (
+          <p className="youtubeStreamLink">
+            <a href={status.watchUrl} target="_blank" rel="noreferrer">
+              Open YouTube watch page ↗
+            </a>
+          </p>
+        )}
+
+        {message && <p className="notice youtubeStreamMessage" role="status">{message}</p>}
       </div>
 
-      {!status ? (
-        <p className="notice">Checking YouTube setup…</p>
-      ) : status.active ? (
-        <button
-          type="button"
-          className="button youtubeStopButton"
-          disabled={busy}
-          onClick={() => void toggleBroadcast()}
-        >
-          {busy ? "Please wait…" : "■  Stop YouTube Stream"}
-        </button>
-      ) : !status.configured ? (
-        <p className="notice">
-          Setup required: add YOUTUBE_STREAM_KEY in the Vercel server environment, then redeploy.
-        </p>
-      ) : !status.canBroadcast ? (
-        <p className="notice">
-          To broadcast, make this game Public and start the game first.
-        </p>
-      ) : (
-        <button
-          type="button"
-          className="button youtubeStartButton"
-          disabled={busy}
-          onClick={() => void toggleBroadcast()}
-        >
-          {busy ? "Please wait…" : "▶  Stream to YouTube"}
-        </button>
-      )}
-
-      {status?.watchUrl && (
-        <p className="youtubeStreamLink">
-          <a href={status.watchUrl} target="_blank" rel="noreferrer">
-            Open YouTube watch page ↗
-          </a>
-        </p>
-      )}
-
-      {message && <p className="notice youtubeStreamMessage" role="status">{message}</p>}
-
       <style jsx>{`
-        .youtubeStreamControl { margin-top: 12px; }
-        .youtubeStreamTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-        h3 { margin: 4px 0 6px; color: var(--text, #f8fafc); font-size: 18px; }
-        p { margin: 0 0 12px; color: var(--muted, #94a3b8); font-size: 13px; }
-        .youtubeStreamStatus { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border, #334155); border-radius: 999px; padding: 6px 10px; color: var(--muted, #94a3b8); font-size: 11px; font-weight: 750; }
+        .youtubeStreamControl { margin: 12px auto 0; max-width: 1050px; padding: 0; overflow: hidden; }
+        .youtubeStreamSummary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; padding: 12px 16px; cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }
+        .youtubeStreamSummary::-webkit-details-marker { display: none; }
+        .youtubeStreamSummary:focus-visible { outline: 2px solid #a875ff; outline-offset: -3px; }
+        .youtubeStreamSummaryTitle { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .youtubeStreamSummaryTitle > span:last-child { display: grid; gap: 3px; }
+        .youtubeStreamSummaryTitle .liveLabel { color: #f87171; font-size: 10px; font-weight: 900; letter-spacing: .1em; }
+        .youtubeStreamSummaryTitle strong { color: var(--text, #f8fafc); font-size: 17px; line-height: 1.25; }
+        .youtubeStreamIcon { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; border-radius: 10px; background: #dc262626; color: #f87171; font-size: 16px; }
+        .youtubeStreamSummaryMeta { display: flex; align-items: center; gap: 12px; }
+        .youtubeStreamChevron { flex: 0 0 9px; width: 9px; height: 9px; margin-right: 4px; border-right: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; transform: rotate(45deg); transition: transform .15s ease; }
+        .youtubeStreamControl[open] .youtubeStreamSummary { border-bottom: 1px solid var(--border, #334155); }
+        .youtubeStreamControl[open] .youtubeStreamChevron { transform: rotate(225deg); }
+        .youtubeStreamBody { padding: 14px 16px 16px; }
+        .youtubeStreamDescription { margin: 0 0 12px; color: var(--muted, #94a3b8); font-size: 13px; }
+        .youtubeStreamStatus { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border, #334155); border-radius: 999px; padding: 6px 10px; color: var(--muted, #94a3b8); font-size: 11px; font-weight: 750; white-space: nowrap; }
         .youtubeStreamStatus > span { width: 7px; height: 7px; border-radius: 50%; background: #64748b; }
         .youtubeStreamStatus.active { border-color: rgba(239, 68, 68, .35); color: #fca5a5; }
         .youtubeStreamStatus.active > span { background: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, .12); }
@@ -134,10 +154,16 @@ export function YouTubeStreamControl({ gameId }: { gameId: string }) {
         .youtubeStartButton { background: #dc2626; color: #fff; border-color: #dc2626; }
         .youtubeStopButton { background: #7f1d1d; color: #fff; border-color: #991b1b; }
         .youtubeStartButton:disabled, .youtubeStopButton:disabled { opacity: .65; cursor: wait; }
+        .youtubeStreamLink { margin: 12px 0 0; }
         .youtubeStreamLink a { color: #93c5fd; text-decoration: underline; font-weight: 700; }
         .youtubeStreamMessage { overflow-wrap: anywhere; margin-top: 10px; }
-        @media (max-width: 600px) { .youtubeStreamTop { flex-direction: column; } }
+        @media (max-width: 600px) {
+          .youtubeStreamSummary { align-items: flex-start; padding: 12px; }
+          .youtubeStreamSummaryMeta { align-items: flex-end; flex-direction: column-reverse; gap: 8px; }
+          .youtubeStreamStatus { font-size: 10px; padding: 5px 7px; }
+          .youtubeStreamBody { padding: 12px; }
+        }
       `}</style>
-    </section>
+    </details>
   );
 }
