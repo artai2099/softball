@@ -6071,3 +6071,212 @@
     padding: 8px;
   }
 }
+
+
+/* Foreground action dialog for defensive plays (out, error, double/triple play). */
+.scoringActionModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  background: rgba(2, 3, 8, .82);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  overscroll-behavior: contain;
+}
+
+.scoringActionModal {
+  width: min(540px, 100%);
+  max-height: min(860px, 88dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px;
+  border: 1px solid rgba(168, 117, 255, .38);
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(124, 60, 255, .19), transparent 58%),
+    linear-gradient(155deg, #15121d 0%, #0b0a10 76%);
+  color: #f8fafc;
+  box-shadow: 0 28px 100px rgba(0, 0, 0, .72), inset 0 1px 0 rgba(255, 255, 255, .06);
+  animation: scoringModalEnter .16s ease-out;
+}
+
+@keyframes scoringModalEnter {
+  from { opacity: 0; transform: translateY(8px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.scoringActionModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.scoringActionModalEyebrow {
+  color: #a78bfa;
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 950;
+  letter-spacing: .16em;
+}
+
+.scoringActionModalHeader h2 {
+  margin: 5px 0 0;
+  color: #fff;
+  font-size: clamp(22px, 5vw, 29px);
+  line-height: 1.15;
+  font-weight: 950;
+}
+
+.scoringActionModalClose {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #ffffff20;
+  border-radius: 11px;
+  background: #ffffff0b;
+  color: #f8fafc;
+  font-size: 27px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.scoringActionModalInstruction {
+  margin: 14px 0 16px;
+  color: #b9b6c4;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.scoringActionModalPositions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.scoringActionModalPositions .position {
+  min-width: 0;
+  min-height: 54px;
+  border: 1px solid #3a3446;
+  border-radius: 11px;
+  background: #17141d;
+  color: #e9e5ef;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background .12s ease, border-color .12s ease, transform .12s ease;
+}
+
+.scoringActionModalPositions .position:hover {
+  border-color: #8a5be8;
+  background: #211832;
+}
+
+.scoringActionModalPositions .position.selected {
+  border-color: #c4a6ff;
+  background: #783df2;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(124, 60, 255, .2);
+}
+
+.scoringActionModal :is(button, .button):focus-visible {
+  outline: 3px solid #c4a6ff;
+  outline-offset: 2px;
+}
+
+.scoringActionModalSummary {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 13px 14px;
+  border: 1px solid #ffffff12;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.scoringActionModalSummary strong {
+  min-height: 22px;
+  color: #fff;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.scoringActionModalStep {
+  color: #aaa3b8;
+  font-size: 12px;
+}
+
+.scoringActionModalFooter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.scoringActionModalFooter .button {
+  min-width: 0;
+  min-height: 50px;
+  padding: 10px 12px;
+  font-size: 15px;
+}
+
+.scoringActionModalFooter .button:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+}
+
+.scoringActionModalError {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(248, 113, 113, .34);
+  border-radius: 9px;
+  background: rgba(127, 29, 29, .18);
+  color: #fecaca;
+  font-size: 13px;
+}
+
+@media (max-width: 680px) {
+  .scoringActionModalBackdrop {
+    align-items: center;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .scoringActionModal {
+    width: 100%;
+    max-height: min(88dvh, 760px);
+    padding: 17px;
+    border-radius: 17px;
+  }
+
+  .scoringActionModalInstruction {
+    margin: 12px 0 14px;
+    font-size: 14px;
+  }
+
+  .scoringActionModalPositions {
+    gap: 8px;
+  }
+
+  .scoringActionModalPositions .position {
+    min-height: 52px;
+    font-size: 16px;
+  }
+
+  .scoringActionModalFooter .button {
+    min-height: 50px;
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scoringActionModal {
+    animation: none;
+  }
+}
