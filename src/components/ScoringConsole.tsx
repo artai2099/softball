@@ -402,8 +402,9 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                 <polygon points="200,18 382,200 200,382 18,200" fill="url(#infieldDirt)" filter="url(#infieldShadow)" />
                 <polygon points="200,83 317,200 200,317 83,200" fill="url(#infieldGrass)" />
                 <path d="M200 18 L382 200 L200 382 L18 200 Z" fill="none" stroke="#e8bd8b" strokeWidth="1.5" />
-                <path d="M200 18 L200 83 M382 200 L317 200 M200 382 L200 317 M18 200 L83 200" fill="none" stroke="#fff7e8" strokeWidth="2" opacity=".9" />
-                <path d="M200 18 L200 382 M18 200 L382 200" stroke="#ffffff" strokeWidth=".6" opacity=".08" />
+                <path d="M200 382 L382 200 M200 382 L18 200" fill="none" stroke="#fffaf0" strokeWidth="2.5" strokeLinecap="round" />
+
+
                 <circle cx="200" cy="230" r="28" fill="url(#infieldDirt)" stroke="#edbd7a" strokeWidth="1.5" />
                 <rect x="194" y="226" width="12" height="5" rx="1" fill="#fff" />
               </svg>
