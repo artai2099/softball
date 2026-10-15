@@ -4491,7 +4491,7 @@
 .baseOnlyField::before {
   content: "";
   position: absolute;
-  z-index: -2;
+  z-index: 0;
   inset: 10% 5%;
   background: linear-gradient(145deg, #d49a5d 0%, #b77c45 52%, #986238 100%);
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
@@ -4501,7 +4501,7 @@
 .baseOnlyField::after {
   content: "";
   position: absolute;
-  z-index: -1;
+  z-index: 1;
   inset: 27% 21%;
   background:
     radial-gradient(ellipse at 50% 45%, #26713d 0%, #1a5b31 72%, #124726 100%);
@@ -4514,7 +4514,7 @@
 .baseDirt {
   display: block;
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   left: 50%;
   top: 51%;
   width: 17%;
