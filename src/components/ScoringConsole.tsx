@@ -461,9 +461,9 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                       setRunnerModalOpen(canScore && game.status !== "final");
                     }}
                   >
-                    {runner
+                    <span>{runner
                       ? `#${runner.jersey_number}`
-                      : `${base}B`}
+                      : `${base}B`}</span>
                   </button>
                 );
               })}
@@ -479,7 +479,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                   setRunnerModalOpen(canScore && game.status !== "final");
                 }}
               >
-                HP
+                <span>HOME</span>
               </button>
 
             </div>
