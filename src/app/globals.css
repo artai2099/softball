@@ -4473,145 +4473,53 @@
    ========================================================= */
 
 .baseOnlyField {
-  aspect-ratio: 762 / 564;
-  height: auto;
   position: relative;
-  width: 100%;
-
-  margin: 8px auto 6px;
+  width: min(100%, 360px);
+  aspect-ratio: 1 / 1;
+  height: auto;
+  margin: 10px auto 8px;
   overflow: hidden;
-  border: 1px solid #ffffff14;
-  border-radius: 14px;
+  border: 1px solid #ffffff1c;
+  border-radius: 16px;
   background:
-    radial-gradient(
-      ellipse 115% 85% at 50% -12%,
-      #195b3b 0%,
-      #12452f 38%,
-      #0c3826 64%,
-      #09291d 100%
-    );
+    radial-gradient(ellipse at 50% 50%, #1d6842 0%, #155234 58%, #0d3b28 100%);
   box-shadow:
-    inset 0 1px 0 #ffffff08,
-    inset 0 -28px 55px #00000018;
+    inset 0 1px 0 #ffffff12,
+    inset 0 0 35px #061c1280;
 }
 
-/* Soft outfield warning/fence arc */
+/* Compact infield-only view: no outfield arc or outfield markers. */
 .baseOnlyField::before {
   content: "";
   position: absolute;
   left: 50%;
-  top: -164px;
-  width: 475px;
-  height: 295px;
-  transform: translateX(-50%);
-  border: 1px solid #cce6d455;
-  border-bottom: 0;
-  border-radius: 50% 50% 0 0;
+  top: 50%;
+  width: 68%;
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1px solid #d7c09a55;
+  border-radius: 5px;
+  background: linear-gradient(145deg, #8b6845, #765438 72%, #67482f);
+  box-shadow: 0 8px 22px #00000030, inset 0 0 0 5px #4c342522;
   pointer-events: none;
-  opacity: .8;
 }
 
-/* White foul/base lines */
+/* Foul lines stay within the infield-focused view. */
 .baseOnlyField::after {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: 8%;
+  bottom: 12%;
   width: 1px;
-  height: 54%;
+  height: 37%;
   transform: translateX(-50%);
-  background: linear-gradient(
-    to top,
-    #ffffff55,
-    #ffffff08
-  );
+  background: linear-gradient(to top, #ffffff75, #ffffff08);
   pointer-events: none;
 }
 
-/* Infield dirt */
+/* The dirt diamond is drawn by the field surface above. */
 .baseDirt {
-  position: absolute;
-  z-index: 1;
-  left: 50%;
-  top: 58%;
-  width: 126px;
-  height: 126px;
-  transform: translate(-50%, -50%) rotate(45deg);
-  border-radius: 6px;
-  background:
-    linear-gradient(
-      135deg,
-      #8b6a47 0%,
-      #7a5a3c 48%,
-      #6b4f35 100%
-    );
-  border: 1px solid #c5a77a55;
-  box-shadow:
-    0 10px 18px #00000020,
-    inset 0 0 0 5px #563e2a22;
-}
-
-/* Outfield position markers */
-.fieldZone {
-  position: absolute;
-  z-index: 6;
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 27px;
-  padding: 0;
-  border: 1px solid #ffffff22;
-  border-radius: 7px;
-  background: #ffffff;
-  border-color: #ffffff;
-  color: #15233a;
-  font-size: 9px;
-  font-weight: 950;
-  letter-spacing: .09em;
-  box-shadow: 0 3px 8px #00000025;
-  backdrop-filter: blur(3px);
-  cursor: pointer;
-  transition:
-    transform .12s ease,
-    background .12s ease,
-    border-color .12s ease,
-    box-shadow .12s ease;
-}
-
-.fieldZone:hover {
-  background: #f2f4f7;
-  border-color: #ffffff;
-}
-
-.fieldZone.leftField {
-  left: 13%;
-  top: 49%;
-  transform: translateY(-50%);
-}
-
-.fieldZone.centerField {
-  left: 50%;
-  top: 14%;
-  transform: translateX(-50%);
-}
-
-.fieldZone.centerField:hover {
-  transform: translateX(-50%) translateY(-1px);
-}
-
-.fieldZone.rightField {
-  right: 13%;
-  top: 49%;
-  transform: translateY(-50%);
-}
-
-.fieldZone.selected {
-  background: #7c3cff;
-  border-color: #c9adff;
-  color: #fff;
-  box-shadow:
-    0 0 0 3px #7c3cff30,
-    0 6px 16px #00000035;
+  display: none;
 }
 
 /* Base runner markers — diamond shape with upright labels */
@@ -4787,43 +4695,19 @@
 
 @media (max-width: 700px) {
   .baseOnlyField {
-    height: 245px;
-  }
-
-  .baseOnlyField::before {
-    width: 420px;
-    height: 265px;
-    top: -148px;
-  }
-
-  .baseDirt {
-    width: 112px;
-    height: 112px;
-  }
-
-  .fieldZone {
-    width: 39px;
-    height: 25px;
-    font-size: 8px;
-  }
-
-  .fieldZone.leftField {
-    left: 8%;
-  }
-
-  .fieldZone.rightField {
-    right: 8%;
+    width: min(100%, 330px);
+    height: auto;
+    aspect-ratio: 1 / 1;
   }
 
   .baseOnly.first {
-    right: 27%;
+    right: 23%;
   }
 
   .baseOnly.third {
-    left: 27%;
+    left: 23%;
   }
 }
-
 
 /* =========================================================
    PROFESSIONAL SCORE DASHBOARD
