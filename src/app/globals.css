@@ -4494,7 +4494,7 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 68%;
+  width: 46%;
   aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%) rotate(45deg);
   border: 1px solid #d7c09a55;
@@ -4701,11 +4701,11 @@
   }
 
   .baseOnly.first {
-    right: 23%;
+    right: 17%;
   }
 
   .baseOnly.third {
-    left: 23%;
+    left: 17%;
   }
 }
 
