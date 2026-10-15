@@ -384,7 +384,29 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
             <div className="baseOnlyField">
 
-              <div className="baseDirt"></div>
+              <svg className="infieldArtwork" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
+                <defs>
+                  <linearGradient id="infieldDirt" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#d49a5d" />
+                    <stop offset="55%" stopColor="#b77c45" />
+                    <stop offset="100%" stopColor="#986238" />
+                  </linearGradient>
+                  <linearGradient id="infieldGrass" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#26713d" />
+                    <stop offset="100%" stopColor="#124726" />
+                  </linearGradient>
+                  <filter id="infieldShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="#000000" floodOpacity=".28" />
+                  </filter>
+                </defs>
+                <polygon points="200,18 382,200 200,382 18,200" fill="url(#infieldDirt)" filter="url(#infieldShadow)" />
+                <polygon points="200,83 317,200 200,317 83,200" fill="url(#infieldGrass)" />
+                <path d="M200 18 L382 200 L200 382 L18 200 Z" fill="none" stroke="#e8bd8b" strokeWidth="1.5" />
+                <path d="M200 18 L200 83 M382 200 L317 200 M200 382 L200 317 M18 200 L83 200" fill="none" stroke="#fff7e8" strokeWidth="2" opacity=".9" />
+                <path d="M200 18 L200 382 M18 200 L382 200" stroke="#ffffff" strokeWidth=".6" opacity=".08" />
+                <circle cx="200" cy="230" r="28" fill="url(#infieldDirt)" stroke="#edbd7a" strokeWidth="1.5" />
+                <rect x="194" y="226" width="12" height="5" rx="1" fill="#fff" />
+              </svg>
 
 
               {(["2","3","1"] as const).map(base => {
