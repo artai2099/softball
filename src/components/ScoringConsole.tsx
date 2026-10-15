@@ -15,7 +15,7 @@ const labels: Record<string,string> = { ball:"Ball",strike:"Strike",foul:"Foul",
 export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScore }: { initialGame: Game;initialEvents:GameEvent[];initialLineup:GameLineupPlayerView[];canScore:boolean }) {
   const [game,setGame]=useState(initialGame); const [events,setEvents]=useState(initialEvents);
   const [pending,setPending]=useState<string|null>(null); const [positions,setPositions]=useState<string[]>([]);
-  const [selectedRunnerBase,setSelectedRunnerBase]=useState<"1"|"2"|"3"|null>(null);
+  const [selectedRunnerBase,setSelectedRunnerBase]=useState<"1"|"2"|"3"|"home"|null>(null);
   const [runnerModalOpen,setRunnerModalOpen]=useState(false);
   const [selectedFieldPosition,setSelectedFieldPosition]=useState<"LF"|"CF"|"RF"|null>(null);
   const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
@@ -91,7 +91,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
     }catch(error){setMessage(error instanceof Error?error.message:"Play could not be recorded");}finally{setSaving(false)}
   }
   async function runnerAction(action:"advance"|"score"|"out") {
-    if (!selectedRunnerBase) return;
+    if (!selectedRunnerBase || selectedRunnerBase === "home") return;
     const baseFrom = selectedRunnerBase;
     const baseTo = action === "advance" ? (baseFrom === "1" ? "2" : baseFrom === "2" ? "3" : undefined) : undefined;
     setSaving(true);
@@ -470,9 +470,14 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
               <button
                 type="button"
-                className="baseOnly home"
+                className={`baseOnly home ${selectedRunnerBase === "home" ? "selected" : ""}`}
                 aria-label="Home plate"
-                onClick={() => setSelectedRunnerBase(null)}
+                aria-pressed={selectedRunnerBase === "home"}
+                onClick={() => {
+                  setSelectedRunnerBase("home");
+                  setMessage("");
+                  setRunnerModalOpen(canScore && game.status !== "final");
+                }}
               >
                 HP
               </button>
@@ -661,10 +666,10 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
             <div className="scoringActionModalHeader">
               <div>
                 <div className="scoringActionModalEyebrow">
-                  {game.bases?.[selectedRunnerBase] ? "BASE RUNNING" : "RECORD AT-BAT"}
+                  {selectedRunnerBase !== "home" && game.bases?.[selectedRunnerBase] ? "BASE RUNNING" : "RECORD AT-BAT"}
                 </div>
                 <h2 id="runner-action-modal-title">
-                  {game.bases?.[selectedRunnerBase]
+                  {selectedRunnerBase !== "home" && game.bases?.[selectedRunnerBase]
                     ? `Runner at ${selectedRunnerBase}B`
                     : "Record batter result"}
                 </h2>
@@ -679,7 +684,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
               </button>
             </div>
 
-            {game.bases?.[selectedRunnerBase] ? (
+            {selectedRunnerBase !== "home" && game.bases?.[selectedRunnerBase] ? (
               <>
                 <p className="scoringActionModalInstruction">
                   Choose the result for this runner. Hit advances safely to the next base; a hit from 3B scores a run. Out records a runner out.
@@ -707,7 +712,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
             ) : (
               <>
                 <p className="scoringActionModalInstruction">
-                  No runner is on {selectedRunnerBase}B. Record the batter's hit below. GameDay Pro will move runners and update the score automatically.
+                  {selectedRunnerBase === "home" ? "Choose the batter’s result below. GameDay Pro will move runners and update the score automatically." : `No runner is on ${selectedRunnerBase}B. Record the batter’s hit below. GameDay Pro will move runners and update the score automatically.`}
                 </p>
 
                 <div className="runnerOutcomeButtons batterResultButtons">
