@@ -17,7 +17,6 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
   const [pending,setPending]=useState<string|null>(null); const [positions,setPositions]=useState<string[]>([]);
   const [selectedRunnerBase,setSelectedRunnerBase]=useState<"1"|"2"|"3"|"home"|null>(null);
   const [runnerModalOpen,setRunnerModalOpen]=useState(false);
-  const [selectedFieldPosition,setSelectedFieldPosition]=useState<"LF"|"CF"|"RF"|null>(null);
   const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
   const [message,setMessage]=useState(""); const [saving,setSaving]=useState(false);
   const supabase=useMemo(()=>createClient(),[]);
@@ -387,42 +386,6 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
               <div className="baseDirt"></div>
 
-              <button
-                type="button"
-                className={`fieldZone leftField ${
-                  selectedFieldPosition === "LF" ? "selected" : ""
-                }`}
-                aria-label="Left field"
-                aria-pressed={selectedFieldPosition === "LF"}
-                onClick={() => setSelectedFieldPosition("LF")}
-              >
-                LF
-              </button>
-
-              <button
-                type="button"
-                className={`fieldZone centerField ${
-                  selectedFieldPosition === "CF" ? "selected" : ""
-                }`}
-                aria-label="Center field"
-                aria-pressed={selectedFieldPosition === "CF"}
-                onClick={() => setSelectedFieldPosition("CF")}
-              >
-                CF
-              </button>
-
-              <button
-                type="button"
-                className={`fieldZone rightField ${
-                  selectedFieldPosition === "RF" ? "selected" : ""
-                }`}
-                aria-label="Right field"
-                aria-pressed={selectedFieldPosition === "RF"}
-                onClick={() => setSelectedFieldPosition("RF")}
-              >
-                RF
-              </button>
-
 
               {(["2","3","1"] as const).map(base => {
                 const runnerId = game.bases?.[base] ?? null;
@@ -483,21 +446,6 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
               </button>
 
             </div>
-
-            {selectedFieldPosition && (
-              <div className="selectedFieldPositionNotice">
-                <span>
-                  FIELD POSITION · {selectedFieldPosition}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedFieldPosition(null)}
-                >
-                  Clear
-                </button>
-              </div>
-            )}
 
             <div className="runnerLegend">
               {(["1","2","3"] as const).map(base => {
