@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { ScoringConsole } from "@/components/ScoringConsole";
 import { createClient } from "@/lib/supabase/server";
 import type { Game, GameEvent, GameLineupPlayerView } from "@/lib/types";
@@ -81,6 +82,17 @@ export default async function GamePage({
   [initialLineup, initialAwayLineup] = await Promise.all([loadLineup(game.home_team_id), loadLineup(game.away_team_id)]);
 
   return (
+    <>
+      {canScore && game.status === "scheduled" && (
+        <section className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
+          <div>
+            <p className="eyebrow" style={{ marginBottom: 5 }}>Before first pitch</p>
+            <h2 style={{ margin: 0 }}>Review your starting lineup</h2>
+            <p className="muted" style={{ marginBottom: 0, marginTop: 5 }}>Set batting order and defensive positions before scoring begins.</p>
+          </div>
+          <Link className="button red" href={`/dashboard/games/${game.id}/lineup`}>Edit lineup</Link>
+        </section>
+      )}
     <ScoringConsole
       initialGame={game as Game}
       initialEvents={(events || []) as GameEvent[]}
@@ -88,5 +100,6 @@ export default async function GamePage({
       initialAwayLineup={initialAwayLineup}
       canScore={canScore}
     />
+    </>
   );
 }
