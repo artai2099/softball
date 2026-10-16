@@ -103,6 +103,19 @@ describe("calculateGameStats", () => {
     });
   });
 
+  it("counts a hit batter against the recorded pitcher", () => {
+    const stats = calculateGameStats(homePlayers, awayPlayers, [
+      {
+        sequence: 1,
+        result: "hbp",
+        details: { batter_id: "away-1", pitcher_id: "home-1" },
+        voided_at: null,
+      },
+    ]);
+    expect(stats.home.rows.find(row => row.playerId === "home-1")?.hitBattersAllowed).toBe(1);
+    expect(stats.away.rows.find(row => row.playerId === "away-1")?.hbp).toBe(1);
+  });
+
   it("attributes pitching outs and defensive putouts only when player IDs are recorded", () => {
     const stats = calculateGameStats(homePlayers, awayPlayers, [
       {
