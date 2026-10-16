@@ -137,23 +137,26 @@ describe("calculateGameStats", () => {
   });
 
   it("uses saved scoring snapshots to keep later runs in the correct inning", () => {
+    const out = (sequence: number, outs: number, inning: number) => ({
+      sequence,
+      result: "out",
+      details: { batter_id: "away-1", out_position_1: "SS" },
+      state_after: { inning, half: "top", outs, bases: { "1": null, "2": null, "3": null } },
+      voided_at: null,
+    });
     const stats = calculateGameStats(homePlayers, awayPlayers, [
+      out(1, 1, 1),
+      out(2, 2, 1),
+      out(3, 0, 2),
       {
-        sequence: 1,
-        result: "runner_score",
-        details: { runner_id: "away-1", base_from: "3" },
-        state_after: { inning: 2, half: "top", outs: 0, bases: { "1": null, "2": null, "3": null } },
-        voided_at: null,
-      },
-      {
-        sequence: 2,
+        sequence: 4,
         result: "home_run",
         details: { batter_id: "away-2" },
         state_after: { inning: 2, half: "top", outs: 0, bases: { "1": null, "2": null, "3": null } },
         voided_at: null,
       },
     ]);
-    expect(stats.away.runsByInning).toEqual([0, 2]);
+    expect(stats.away.runsByInning).toEqual([0, 1]);
   });
 
   it("attributes plate appearances to an incoming substitute", () => {
