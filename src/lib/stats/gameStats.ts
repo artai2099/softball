@@ -100,7 +100,7 @@ function creditKnownScorers(
 }
 
 function applyEventRuns(
-  teams: { home: TeamBox & { stats: Map<string, StatLine> }; away: TeamBox & { stats: Map<string, StatLine> },
+  teams: { home: TeamBox & { stats: Map<string, StatLine> }; away: TeamBox & { stats: Map<string, StatLine> } },
   inning: number,
   scoreDelta: RunDelta | null,
   fallbackSide: TeamSide,
