@@ -104,6 +104,9 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
       putouts: 0, assists: 0, fieldingErrors: 0,
     },
   );
+  // Keep the displayed team R total aligned with the official team run count.
+  // A separate score-integrity notice below identifies any runs without a player attribution.
+  totals.r = team.runs;
 
   return (
     <section className="panel" id={name.toLowerCase().replace(/\s+/g, "-")}>
@@ -233,6 +236,11 @@ export default async function GameStatsPage({
   const runsReconcile =
     stats.home.runs === savedHomeRuns &&
     stats.away.runs === savedAwayRuns;
+  const homePlayerRuns = stats.home.rows.reduce((total, player) => total + player.r, 0);
+  const awayPlayerRuns = stats.away.rows.reduce((total, player) => total + player.r, 0);
+  const playerRunsReconcile =
+    homePlayerRuns === stats.home.runs &&
+    awayPlayerRuns === stats.away.runs;
   const scoreText = `${awayName} ${game.away_score ?? 0} - ${game.home_score ?? 0} ${homeName}`;
 
   return (
@@ -270,6 +278,13 @@ export default async function GameStatsPage({
         ) : (
           <p className="notice">
             Event-derived runs do not match the saved scoreboard. {awayName}: calculated {stats.away.runs}, saved {savedAwayRuns}; {homeName}: calculated {stats.home.runs}, saved {savedHomeRuns}. Review the scoring history before relying on these statistics.
+          </p>
+        )}
+        {playerRunsReconcile ? (
+          <p className="notice">Individual player run totals match the team totals.</p>
+        ) : (
+          <p className="error" role="status">
+            Individual player runs do not fully reconcile with the team totals. {awayName}: credited to players {awayPlayerRuns}, team runs {stats.away.runs}; {homeName}: credited to players {homePlayerRuns}, team runs {stats.home.runs}. One or more scoring events may be missing a batter or runner ID, so the team score is retained without inventing a player attribution.
           </p>
         )}
       </section>
