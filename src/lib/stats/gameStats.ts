@@ -208,6 +208,57 @@ export function calculateGameStats(
     while ((home.runsByInning.length < inning)) home.runsByInning.push(0);
     while ((away.runsByInning.length < inning)) away.runsByInning.push(0);
 
+    // Runner actions are first-class scoring events, not plate appearances.
+    // Attribute a runner's run to the runner, and update the reconstructed bases
+    // before processing the next event. This keeps LOB and inning runs consistent
+    // when the scorekeeper manually advances, scores, or retires a runner.
+    if (
+      event.result === "runner_advance" ||
+      event.result === "runner_score" ||
+      event.result === "runner_out"
+    ) {
+      const details = event.details ?? {};
+      const runnerId = typeof details.runner_id === "string" ? details.runner_id : null;
+      const runnerTeamName = runnerId ? playerTeam.get(runnerId) : undefined;
+      const runnerTeam = runnerTeamName === "home" ? home
+        : runnerTeamName === "away" ? away
+        : half === "top" ? away : home;
+      const runnerStats = runnerTeam.stats;
+      const baseFrom = details.base_from === "1" || details.base_from === "2" || details.base_from === "3"
+        ? details.base_from : null;
+      const baseTo = details.base_to === "1" || details.base_to === "2" || details.base_to === "3"
+        ? details.base_to : null;
+
+      if (event.result === "runner_advance" && baseFrom && baseTo) {
+        const movedRunner = bases[Number(baseFrom) as 1 | 2 | 3] ?? runnerId;
+        bases[Number(baseFrom) as 1 | 2 | 3] = null;
+        bases[Number(baseTo) as 1 | 2 | 3] = movedRunner;
+      } else if ((event.result === "runner_score" || event.result === "runner_out") && baseFrom) {
+        const movedRunner = bases[Number(baseFrom) as 1 | 2 | 3] ?? runnerId;
+        bases[Number(baseFrom) as 1 | 2 | 3] = null;
+        if (event.result === "runner_score" && movedRunner) {
+          addRun(runnerTeam, runnerStats, movedRunner);
+          while (runnerTeam.runsByInning.length < inning) runnerTeam.runsByInning.push(0);
+          runnerTeam.runsByInning[inning - 1]++;
+        } else if (event.result === "runner_out") {
+          outs++;
+          if (outs >= 3) {
+            runnerTeam.lob += [bases[1], bases[2], bases[3]].filter(Boolean).length;
+            bases = { 1: null, 2: null, 3: null };
+            outs = 0;
+            if (half === "top") half = "bottom";
+            else {
+              half = "top";
+              inning++;
+            }
+          }
+        }
+      }
+      while (home.runsByInning.length < inning) home.runsByInning.push(0);
+      while (away.runsByInning.length < inning) away.runsByInning.push(0);
+      continue;
+    }
+
     if (event.result === "error" && fielding) fielding.errors++;
 
     if (isPlateAppearance(event) && batterId && batting) {
