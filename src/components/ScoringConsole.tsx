@@ -11,14 +11,14 @@ import { PlayFeed } from "./PlayFeed";
 import { SubstitutionPanel } from "./SubstitutionPanel";
 import { YouTubeStreamControl } from "./YouTubeStreamControl";
 
-const labels: Record<string,string> = { ball:"Ball",strike:"Strike",foul:"Foul",single:"1B",double:"2B",triple:"3B",home_run:"HR",walk:"Walk",hbp:"HBP",strikeout:"Strikeout",out:"Out",error:"Error",double_play:"Double play",triple_play:"Triple play" };
+const labels: Record<string,string> = { ball:"Ball",strike:"Strike",foul:"Foul",single:"1B",double:"2B",triple:"3B",home_run:"HR",walk:"Walk",hbp:"HBP",strikeout:"Strikeout",out:"Out",error:"Error",double_play:"Double play",triple_play:"Triple play",sacrifice_fly:"Sac fly",sacrifice_bunt:"Sac bunt" };
 
 export function ScoringConsole({ initialGame,initialEvents,initialLineup,initialAwayLineup,canScore }: { initialGame: Game;initialEvents:GameEvent[];initialLineup:GameLineupPlayerView[];initialAwayLineup:GameLineupPlayerView[];canScore:boolean }) {
   const [game,setGame]=useState(initialGame); const [events,setEvents]=useState(initialEvents);
   const [pending,setPending]=useState<string|null>(null); const [positions,setPositions]=useState<string[]>([]);
   const [selectedRunnerBase,setSelectedRunnerBase]=useState<"1"|"2"|"3"|"home"|null>(null);
   const [runnerModalOpen,setRunnerModalOpen]=useState(false);
-  const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]); const [awayPlayers,setAwayPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
+  const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [pitcherId,setPitcherId]=useState<string>(""); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]); const [awayPlayers,setAwayPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
   const [message,setMessage]=useState(""); const [saving,setSaving]=useState(false);
   const supabase=useMemo(()=>createClient(),[]);
 
@@ -42,6 +42,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
 
   const awayScoringPlayers = initialAwayLineup.length > 0 ? initialAwayLineup : awayPlayers.map((player) => ({ id: player.id, player_id: player.id, first_name: player.first_name, last_name: player.last_name, jersey_number: player.jersey_number, batting_order: null, position: "", starter: true, active: true, entered_at: null, left_at: null, lineup_id: "", created_at: "" }));
   const battingPlayers = game.half === "top" ? awayScoringPlayers : scoringPlayers;
+  const fieldingPlayers = game.half === "top" ? scoringPlayers : awayScoringPlayers;
 
   useEffect(() => {
     if (battingPlayers.length === 0) return;
@@ -57,9 +58,11 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
 
   const required=pending==="error"||pending==="out"?1:pending==="double_play"?2:pending==="triple_play"?3:0;
   const activeBatter = battingPlayers.find(p => p.player_id === batterId);
+  const activeFielders = fieldingPlayers.filter(p => p.active);
   async function record(result:string,selected:string[]=[]) {
     setSaving(true);setMessage("");
-    const details={...(result==="error"?{error_position:selected[0]}:Object.fromEntries(selected.map((position,index)=>[`out_position_${index+1}`,position]))),...(batterId && battingPlayers.some((player) => player.player_id === batterId) ? { batter_id: batterId } : {})};
+    const fielderForPosition = (position: string) => activeFielders.find(player => player.position.toUpperCase() === position.toUpperCase())?.player_id;
+    const details={...(result==="error"?{error_position:selected[0],...(fielderForPosition(selected[0])?{error_fielder_id:fielderForPosition(selected[0])}:{})}:Object.fromEntries(selected.flatMap((position,index)=>[[`out_position_${index+1}`,position],...(fielderForPosition(position)?[[`out_fielder_id_${index+1}`,fielderForPosition(position)!]]:[])])),...(batterId && battingPlayers.some((player) => player.player_id === batterId) ? { batter_id: batterId } : {}),...(pitcherId && activeFielders.some(player=>player.player_id===pitcherId)?{pitcher_id:pitcherId}:{})};
     try{const controller=new AbortController();
       const timeout=window.setTimeout(()=>controller.abort(),10000);
       let response:Response;
@@ -272,6 +275,13 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
               <div className="liveLabel">
                 Pitch / play
               </div>
+              <label style={{ display: "block", maxWidth: 420, margin: "10px 0" }}>
+                Pitcher (for pitching stats)
+                <select value={pitcherId} onChange={event=>setPitcherId(event.target.value)} disabled={saving||game.status==="final"} style={{ display: "block", width: "100%", marginTop: 6 }}>
+                  <option value="">Select pitcher — leave blank if unknown</option>
+                  {activeFielders.map(player=><option key={player.player_id} value={player.player_id}>#{player.jersey_number} {player.first_name} {player.last_name}</option>)}
+                </select>
+              </label>
 
               <div className="actionGrid">
 
