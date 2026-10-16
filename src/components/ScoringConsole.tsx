@@ -685,6 +685,36 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                     {saving ? "Saving…" : "Out"}
                   </button>
                 </div>
+
+                <p className="scoringActionModalInstruction">
+                  Batter result · records the hit and moves all runners automatically
+                </p>
+                <div className="runnerOutcomeButtons batterResultButtons">
+                  <button
+                    type="button"
+                    className="button secondary runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final"}
+                    onClick={() => void record("double")}
+                  >
+                    Double
+                  </button>
+                  <button
+                    type="button"
+                    className="button secondary runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final"}
+                    onClick={() => void record("triple")}
+                  >
+                    Triple
+                  </button>
+                  <button
+                    type="button"
+                    className="button primary runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final"}
+                    onClick={() => void record("home_run")}
+                  >
+                    Home Run
+                  </button>
+                </div>
               </>
             ) : (
               <>
