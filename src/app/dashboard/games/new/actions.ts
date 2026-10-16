@@ -11,7 +11,8 @@ export async function createGame(formData: FormData) {
   }
 
   const homeTeamId = String(formData.get("homeTeamId") || "").trim();
-  const awayName = String(formData.get("awayName") || "").trim();
+  const awayTeamId = String(formData.get("awayTeamId") || "").trim();
+  let awayName = String(formData.get("awayName") || "").trim();
 
   if (!homeTeamId) {
     throw new Error(
@@ -19,8 +20,39 @@ export async function createGame(formData: FormData) {
     );
   }
 
+  let selectedAwayTeamId: string | null = null;
+
+  if (awayTeamId) {
+    const { data: followedMembership } = await supabase
+      .from("team_memberships")
+      .select("team_id")
+      .eq("user_id", user.id)
+      .eq("team_id", awayTeamId)
+      .maybeSingle();
+
+    if (!followedMembership) {
+      throw new Error("Choose a team you follow as the opponent.");
+    }
+
+    const { data: awayTeam, error: awayTeamError } = await supabase
+      .from("teams")
+      .select("id,name")
+      .eq("id", awayTeamId)
+      .single();
+
+    if (awayTeamError || !awayTeam) {
+      throw new Error("The selected opponent team could not be found.");
+    }
+    if (awayTeam.id === homeTeam.id) {
+      throw new Error("The home team and opponent must be different.");
+    }
+
+    selectedAwayTeamId = awayTeam.id;
+    awayName = awayTeam.name;
+  }
+
   if (!awayName) {
-    throw new Error("Opponent name is required.");
+    throw new Error("Choose a followed opponent team or enter an opponent name.");
   }
 
   const { data: homeTeam, error: homeTeamError } = await supabase
@@ -54,6 +86,7 @@ export async function createGame(formData: FormData) {
       organization_id: membership.organization_id,
       home_team_id: homeTeam.id,
       home_name: homeTeam.name,
+      away_team_id: selectedAwayTeamId,
       away_name: awayName,
       game_date: gameDate.toISOString(),
       venue: String(formData.get("venue") || "").trim(),
