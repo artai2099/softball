@@ -84,6 +84,51 @@ describe("calculateGameStats", () => {
     expect(stats.away.rows.find((row) => row.playerId === "away-1")?.r).toBe(0);
   });
 
+  it("calculates sacrifice flies without charging an at-bat", () => {
+    const stats = calculateGameStats(homePlayers, awayPlayers, [
+      event(1, "single", "away-1"),
+      { ...event(2, "sacrifice_fly", "away-2"), details: { batter_id: "away-2", pitcher_id: "home-1" } },
+    ]);
+    expect(stats.away.rows.find(row => row.playerId === "away-2")).toMatchObject({
+      pa: 1, ab: 0, sf: 1,
+    });
+    expect(stats.away.runs).toBe(0);
+    expect(stats.home.rows.find(row => row.playerId === "home-1")?.pitchingOuts).toBe(1);
+  });
+
+  it("attributes pitching outs and defensive putouts only when player IDs are recorded", () => {
+    const stats = calculateGameStats(homePlayers, awayPlayers, [
+      {
+        sequence: 1,
+        result: "out",
+        details: { batter_id: "away-1", pitcher_id: "home-1", out_position_1: "SS", out_fielder_id_1: "home-1" },
+        voided_at: null,
+      },
+    ]);
+    expect(stats.home.rows.find(row => row.playerId === "home-1")).toMatchObject({
+      pitchingOuts: 1, putouts: 1,
+    });
+  });
+
+  it("counts stolen bases and caught stealing from runner events", () => {
+    const stats = calculateGameStats(homePlayers, awayPlayers, [
+      event(1, "single", "away-1"),
+      {
+        sequence: 2,
+        result: "stolen_base",
+        details: { runner_id: "away-1", base_from: "1", base_to: "2" },
+        voided_at: null,
+      },
+      {
+        sequence: 3,
+        result: "caught_stealing",
+        details: { runner_id: "away-1", base_from: "2", base_to: null },
+        voided_at: null,
+      },
+    ]);
+    expect(stats.away.rows.find(row => row.playerId === "away-1")).toMatchObject({ sb: 1, cs: 1 });
+  });
+
   it("does not count voided events in batting totals", () => {
     const stats = calculateGameStats(homePlayers, awayPlayers, [
       { ...event(1, "home_run", "away-2"), voided_at: "2026-10-15T12:00:00Z" },
