@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireMembership } from "@/lib/auth";
 import { saveLineup } from "./actions";
+import LineupEditor from "./LineupEditor";
 
 const POSITIONS = ["", "P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DP", "FLEX"];
 
@@ -83,32 +84,21 @@ export default async function PregameLineupPage({
         )}
 
         {(roster || []).length > 0 && (
-          <form action={saveAction}>
-            <div className="lineupGrid lineupHeader" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 110px 140px", gap: 10, padding: "0 10px 10px", color: "var(--muted, #8b93a1)", fontSize: 12, fontWeight: 800 }}>
-              <span>PLAYER</span><span>BATTING #</span><span>POSITION</span>
-            </div>
-            <div style={{ display: "grid", gap: 8 }}>
-              {(roster || []).map((player) => {
-                const existing = savedByPlayer.get(player.id);
-                return (
-                  <div key={player.id} className="lineupGrid" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 110px 140px", gap: 10, alignItems: "center", border: "1px solid var(--border, #2b3038)", borderRadius: 10, padding: 10 }}>
-                    <label htmlFor={`order-${player.id}`} style={{ minWidth: 0, margin: 0 }}>
-                      <span style={{ display: "block", fontWeight: 800 }}>#{player.jersey_number} {player.first_name} {player.last_name}</span>
-                      <span className="muted" style={{ fontSize: 12 }}>{existing ? "In current lineup" : "Roster player"}</span>
-                    </label>
-                    <input id={`order-${player.id}`} name={`order_${player.id}`} type="number" min="1" max="20" step="1" defaultValue={existing?.batting_order ?? ""} aria-label={`Batting order for ${player.first_name} ${player.last_name}`} />
-                    <select name={`position_${player.id}`} defaultValue={existing?.position ?? ""} aria-label={`Position for ${player.first_name} ${player.last_name}`}>
-                      {POSITIONS.map((position) => <option key={position || "none"} value={position}>{position || "Not set"}</option>)}
-                    </select>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "space-between", marginTop: 20 }}>
-              <Link className="button secondary" href={`/dashboard/games/${game.id}`}>Save later / back</Link>
-              <button className="button red" type="submit">Save starting lineup</button>
-            </div>
-          </form>
+          <LineupEditor
+            roster={(roster || []).map((player) => ({
+              id: player.id,
+              first_name: player.first_name,
+              last_name: player.last_name,
+              jersey_number: player.jersey_number,
+            }))}
+            lineupPlayers={(lineupPlayers || []).map((player) => ({
+              player_id: player.player_id,
+              batting_order: player.batting_order,
+              position: player.position,
+            }))}
+            action={saveAction}
+            gameId={game.id}
+          />
         )}
       </section>
       <style>{`
