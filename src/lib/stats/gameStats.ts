@@ -4,7 +4,7 @@ export type StatLine = {
   triples: number; hr: number; rbi: number; bb: number; hbp: number; so: number;
   sb: number; cs: number; sf: number; sacrifices: number;
   pitchingOuts: number; earnedRuns: number; runsAllowed: number; walksAllowed: number;
-  strikeoutsPitched: number; hitsAllowed: number;
+  strikeoutsPitched: number; hitsAllowed: number; hitBattersAllowed: number;
   putouts: number; assists: number; fieldingErrors: number;
 };
 export type TeamBox = { rows: StatLine[]; runs: number; hits: number; errors: number; lob: number; runsByInning: number[] };
@@ -18,7 +18,7 @@ const emptyBases = (): Bases => ({1:null,2:null,3:null});
 function emptyStat(p: Player): StatLine {
   return {playerId:p.player_id,name:`${p.first_name} ${p.last_name}`.trim(),jersey:p.jersey_number,order:p.batting_order,
     pa:0,ab:0,r:0,h:0,singles:0,doubles:0,triples:0,hr:0,rbi:0,bb:0,hbp:0,so:0,sb:0,cs:0,sf:0,sacrifices:0,
-    pitchingOuts:0,earnedRuns:0,runsAllowed:0,walksAllowed:0,strikeoutsPitched:0,hitsAllowed:0,putouts:0,assists:0,fieldingErrors:0};
+    pitchingOuts:0,earnedRuns:0,runsAllowed:0,walksAllowed:0,strikeoutsPitched:0,hitsAllowed:0,hitBattersAllowed:0,putouts:0,assists:0,fieldingErrors:0};
 }
 function newTeam(players: Player[]): TeamBox & {stats: Map<string,StatLine>} {
   const stats = new Map(players.map(p=>[p.player_id,emptyStat(p)]));
@@ -230,6 +230,7 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
     }
     if(pitcher){
       if(event.result==="walk")pitcher.walksAllowed++;
+      if(event.result==="hbp")pitcher.hitBattersAllowed++;
       if(event.result==="strikeout")pitcher.strikeoutsPitched++;
       if(HITS[event.result])pitcher.hitsAllowed++;
     }
@@ -291,3 +292,15 @@ export function rate(numerator:number,denominator:number){return denominator?(nu
 export function obp(stat:StatLine){return rate(stat.h+stat.bb+stat.hbp,stat.ab+stat.bb+stat.hbp+stat.sf);}
 export function slg(stat:StatLine){return rate(stat.singles+2*stat.doubles+3*stat.triples+4*stat.hr,stat.ab);}
 export function ops(stat:StatLine){return (Number(obp(stat))+Number(slg(stat))).toFixed(3).replace(/^0/,"");}
+
+export function era(stat: Pick<StatLine, "earnedRuns" | "pitchingOuts">, inningsPerGame = 7) {
+  return stat.pitchingOuts > 0
+    ? ((stat.earnedRuns * inningsPerGame * 3) / stat.pitchingOuts).toFixed(2)
+    : "—";
+}
+
+export function whip(stat: Pick<StatLine, "walksAllowed" | "hitsAllowed" | "pitchingOuts">) {
+  return stat.pitchingOuts > 0
+    ? (((stat.walksAllowed + stat.hitsAllowed) * 3) / stat.pitchingOuts).toFixed(2)
+    : "—";
+}
