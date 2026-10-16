@@ -84,14 +84,14 @@ export default async function PregameLineupPage({
 
         {(roster || []).length > 0 && (
           <form action={saveAction}>
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 110px 140px", gap: 10, padding: "0 10px 10px", color: "var(--muted, #8b93a1)", fontSize: 12, fontWeight: 800 }}>
+            <div className="lineupGrid lineupHeader" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 110px 140px", gap: 10, padding: "0 10px 10px", color: "var(--muted, #8b93a1)", fontSize: 12, fontWeight: 800 }}>
               <span>PLAYER</span><span>BATTING #</span><span>POSITION</span>
             </div>
             <div style={{ display: "grid", gap: 8 }}>
               {(roster || []).map((player) => {
                 const existing = savedByPlayer.get(player.id);
                 return (
-                  <div key={player.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 110px 140px", gap: 10, alignItems: "center", border: "1px solid var(--border, #2b3038)", borderRadius: 10, padding: 10 }}>
+                  <div key={player.id} className="lineupGrid" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 110px 140px", gap: 10, alignItems: "center", border: "1px solid var(--border, #2b3038)", borderRadius: 10, padding: 10 }}>
                     <label htmlFor={`order-${player.id}`} style={{ minWidth: 0, margin: 0 }}>
                       <span style={{ display: "block", fontWeight: 800 }}>#{player.jersey_number} {player.first_name} {player.last_name}</span>
                       <span className="muted" style={{ fontSize: 12 }}>{existing ? "In current lineup" : "Roster player"}</span>
@@ -113,7 +113,8 @@ export default async function PregameLineupPage({
       </section>
       <style>{`
         @media (max-width: 560px) {
-          .card form > div[style*="grid-template-columns"] { grid-template-columns: minmax(0,1fr) 76px 105px !important; gap: 6px !important; }
+          .lineupGrid { grid-template-columns: minmax(0,1fr) 76px 105px !important; gap: 6px !important; }
+          .lineupHeader { font-size: 10px !important; }
           .card form input, .card form select { min-width: 0; width: 100%; box-sizing: border-box; }
         }
       `}</style>
