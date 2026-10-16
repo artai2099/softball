@@ -20,6 +20,19 @@ export async function createGame(formData: FormData) {
     );
   }
 
+  const { data: homeTeam, error: homeTeamError } = await supabase
+    .from("teams")
+    .select("id,name")
+    .eq("id", homeTeamId)
+    .eq("organization_id", membership.organization_id)
+    .single();
+
+  if (homeTeamError || !homeTeam) {
+    throw new Error(
+      "The selected home team could not be found. Create or select a valid team."
+    );
+  }
+
   let selectedAwayTeamId: string | null = null;
 
   if (awayTeamId) {
@@ -43,6 +56,7 @@ export async function createGame(formData: FormData) {
     if (awayTeamError || !awayTeam) {
       throw new Error("The selected opponent team could not be found.");
     }
+
     if (awayTeam.id === homeTeam.id) {
       throw new Error("The home team and opponent must be different.");
     }
@@ -53,19 +67,6 @@ export async function createGame(formData: FormData) {
 
   if (!awayName) {
     throw new Error("Choose a followed opponent team or enter an opponent name.");
-  }
-
-  const { data: homeTeam, error: homeTeamError } = await supabase
-    .from("teams")
-    .select("id,name")
-    .eq("id", homeTeamId)
-    .eq("organization_id", membership.organization_id)
-    .single();
-
-  if (homeTeamError || !homeTeam) {
-    throw new Error(
-      "The selected home team could not be found. Create or select a valid team."
-    );
   }
 
   const gameDateValue = String(formData.get("gameDate") || "").trim();
