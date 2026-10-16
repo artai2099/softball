@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createGame } from "./actions";
 import OpponentTeamPicker from "./OpponentTeamPicker";
+import PregameReviewSubmit from "./PregameReviewSubmit";
 import { requireMembership } from "@/lib/auth";
 
 export default async function NewGamePage() {
@@ -132,9 +133,7 @@ export default async function NewGamePage() {
               </select>
             </label>
 
-            <button className="button red" type="submit">
-              Create game
-            </button>
+            <PregameReviewSubmit />
           </form>
         </section>
       )}
