@@ -233,6 +233,7 @@ export function calculateGameStats(
   let outs = 0;
   let inning = 1;
   let half: "top" | "bottom" = "top";
+  let lastPitcherId: string | null = null;
   const ordered = events.filter((e) => !e.voided_at).sort((a, b) => a.sequence - b.sequence);
 
   for (const event of ordered) {
@@ -271,16 +272,17 @@ export function calculateGameStats(
         const movedRunner = bases[Number(baseFrom) as 1 | 2 | 3] ?? runnerId;
         bases[Number(baseFrom) as 1 | 2 | 3] = null;
         bases[Number(baseTo) as 1 | 2 | 3] = movedRunner;
-        if (event.result === "stolen_base" && movedRunner) runnerStats.get(movedRunner)!.sb++;
+        if (event.result === "stolen_base" && movedRunner) { const runnerStat = runnerStats.get(movedRunner); if (runnerStat) runnerStat.sb++; }
       } else if ((event.result === "runner_score" || event.result === "runner_out" || event.result === "caught_stealing") && baseFrom) {
         const movedRunner = bases[Number(baseFrom) as 1 | 2 | 3] ?? runnerId;
         bases[Number(baseFrom) as 1 | 2 | 3] = null;
         if (event.result === "runner_score" && movedRunner) {
+          if (pitcher) pitcher.runsAllowed++;
           addRun(runnerTeam, runnerStats, movedRunner);
           while (runnerTeam.runsByInning.length < inning) runnerTeam.runsByInning.push(0);
           runnerTeam.runsByInning[inning - 1]++;
         } else if (event.result === "runner_out" || event.result === "caught_stealing") {
-          if (event.result === "caught_stealing" && movedRunner) runnerStats.get(movedRunner)!.cs++;
+          if (event.result === "caught_stealing" && movedRunner) { const runnerStat = runnerStats.get(movedRunner); if (runnerStat) runnerStat.cs++; }
           outs++;
           if (pitcher) {
       if (["strikeout", "out", "sacrifice_fly", "sacrifice_bunt"].includes(event.result)) pitcher.pitchingOuts++;
@@ -306,7 +308,9 @@ export function calculateGameStats(
     }
 
     const details = event.details ?? {};
-    const pitcherId = typeof details.pitcher_id === "string" ? details.pitcher_id : null;
+    const suppliedPitcherId = typeof details.pitcher_id === "string" ? details.pitcher_id : null;
+    if (suppliedPitcherId) lastPitcherId = suppliedPitcherId;
+    const pitcherId = suppliedPitcherId ?? lastPitcherId;
     const pitcherTeamName = pitcherId ? playerTeam.get(pitcherId) : undefined;
     const pitchingTeam = pitcherTeamName === "home" ? home : pitcherTeamName === "away" ? away : null;
     const pitcher = pitcherId && pitchingTeam ? pitchingTeam.stats.get(pitcherId) : undefined;
