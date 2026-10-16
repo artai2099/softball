@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createGame } from "./actions";
+import OpponentTeamPicker from "./OpponentTeamPicker";
 import { requireMembership } from "@/lib/auth";
 
 export default async function NewGamePage() {
@@ -92,20 +93,7 @@ export default async function NewGamePage() {
               </select>
             </label>
 
-            <label>
-              Opponent team you follow
-              <select name="awayTeamId" defaultValue="">
-                <option value="">Choose a followed team (optional)</option>
-                {followedTeams?.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}{team.city ? ` · ${team.city}` : ""}
-                  </option>
-                ))}
-              </select>
-              <span className="muted" style={{ display: "block", marginTop: 6 }}>
-                Choose a team you follow, or enter an opponent name below.
-              </span>
-            </label>
+            <OpponentTeamPicker teams={followedTeams ?? []} />
 
             <label>
               Opponent name (if not selecting a team)
