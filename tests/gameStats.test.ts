@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateGameStats, obp, ops, rate, slg } from "../src/lib/stats/gameStats";
+import { calculateGameStats, era, obp, ops, rate, slg, whip } from "../src/lib/stats/gameStats";
 
 const players = [
   { player_id: "a", batting_order: 1, first_name: "A", last_name: "One", jersey_number: 1 },
@@ -16,6 +16,13 @@ const e = (sequence: number, result: string, batter_id: string, extra: Record<st
 });
 
 describe("professional batting stats", () => {
+  it("calculates softball ERA and WHIP from recorded pitching totals", () => {
+    expect(era({ earnedRuns: 2, pitchingOuts: 12 })).toBe("3.50");
+    expect(whip({ walksAllowed: 2, hitsAllowed: 4, pitchingOuts: 12 })).toBe("1.50");
+    expect(era({ earnedRuns: 0, pitchingOuts: 0 })).toBe("—");
+    expect(whip({ walksAllowed: 0, hitsAllowed: 0, pitchingOuts: 0 })).toBe("—");
+  });
+
   it("calculates PA/AB/hits and slash line", () => {
     const { away } = calculateGameStats([], players, [
       e(1, "single", "a"),
