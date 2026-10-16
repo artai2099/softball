@@ -79,10 +79,10 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
       if(!response.ok)throw new Error(body.error||"Play could not be recorded"); const updatedGame=body.game as Game; setGame(updatedGame); setBatterId(updatedGame.current_batter_id||null); setPending(null);setPositions([]);setRunnerModalOpen(false);setSelectedRunnerBase(null); if(updatedGame.status==="final"){window.location.assign("/dashboard");}
     }catch(error){setMessage(error instanceof Error?error.message:"Play could not be recorded");}finally{setSaving(false)}
   }
-  async function runnerAction(action:"advance"|"score"|"out") {
+  async function runnerAction(action:"advance"|"score"|"out"|"steal"|"caught_stealing") {
     if (!selectedRunnerBase || selectedRunnerBase === "home") return;
     const baseFrom = selectedRunnerBase;
-    const baseTo = action === "advance" ? (baseFrom === "1" ? "2" : baseFrom === "2" ? "3" : undefined) : undefined;
+    const baseTo = action === "advance" || action === "steal" ? (baseFrom === "1" ? "2" : baseFrom === "2" ? "3" : undefined) : undefined;
     setSaving(true);
     setMessage("");
     try {
@@ -107,9 +107,9 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
       const updatedGame = body.game as Game;
       setGame(updatedGame);
       setBatterId(updatedGame.current_batter_id || null);
-      setSelectedRunnerBase(action === "advance" && baseTo ? baseTo : null);
+      setSelectedRunnerBase((action === "advance" || action === "steal") && baseTo ? baseTo : null);
       setRunnerModalOpen(false);
-      setMessage(action === "advance" ? `Runner advanced to ${baseTo}B.` : action === "score" ? "Run recorded." : "Runner out recorded.");
+      setMessage(action === "advance" ? `Runner advanced to ${baseTo}B.` : action === "steal" ? `Stolen base recorded.` : action === "caught_stealing" ? "Caught stealing recorded." : action === "score" ? "Run recorded." : "Runner out recorded.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Runner action could not be recorded");
     } finally {
@@ -674,6 +674,24 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
                     onClick={() => void runnerAction("out")}
                   >
                     {saving ? "Saving…" : "Out"}
+                  </button>
+                  {selectedRunnerBase !== "3" && (
+                    <button
+                      type="button"
+                      className="button secondary runnerChoiceButton"
+                      disabled={!canScore || saving || game.status === "final" || Boolean(game.bases[selectedRunnerBase === "1" ? "2" : "3"])}
+                      onClick={() => void runnerAction("steal")}
+                    >
+                      Steal next base
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="button secondary runnerChoiceButton"
+                    disabled={!canScore || saving || game.status === "final"}
+                    onClick={() => void runnerAction("caught_stealing")}
+                  >
+                    Caught stealing
                   </button>
                 </div>
 
