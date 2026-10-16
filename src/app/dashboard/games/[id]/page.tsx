@@ -60,62 +60,32 @@ export default async function GamePage({
 
   const canScore = organizationCanScore || teamManagerCanScore;
 
-  let initialLineup: GameLineupPlayerView[] = [];
-
-  if (game.home_team_id) {
-    const { data: lineup } = await supabase
-      .from("game_lineups")
-      .select("id")
-      .eq("game_id", game.id)
-      .eq("team_id", game.home_team_id)
-      .maybeSingle();
-
-    if (lineup) {
-      const { data: lineupPlayers } = await supabase
-        .from("game_lineup_players")
-        .select("*")
-        .eq("lineup_id", lineup.id)
-        .order("batting_order", { ascending: true });
-
-      const playerIds = (lineupPlayers || []).map((player) => player.player_id);
-
-      if (playerIds.length > 0) {
-        const { data: playerRows } = await supabase
-          .from("players")
-          .select("id, first_name, last_name, jersey_number")
-          .in("id", playerIds);
-
-        const playerMap = new Map(
-          (playerRows || []).map((player) => [player.id, player]),
-        );
-
-        initialLineup = (lineupPlayers || [])
-          .map((lineupPlayer) => {
-            const player = playerMap.get(lineupPlayer.player_id);
-
-            if (!player) {
-              return null;
-            }
-
-            return {
-              ...lineupPlayer,
-              first_name: player.first_name,
-              last_name: player.last_name,
-              jersey_number: player.jersey_number,
-            };
-          })
-          .filter(
-            (player): player is GameLineupPlayerView => player !== null,
-          );
-      }
-    }
+  async function loadLineup(teamId: string | null): Promise<GameLineupPlayerView[]> {
+    if (!teamId) return [];
+    const { data: lineup } = await supabase.from("game_lineups").select("id").eq("game_id", game.id).eq("team_id", teamId).maybeSingle();
+    if (!lineup) return [];
+    const { data: lineupPlayers } = await supabase.from("game_lineup_players").select("*").eq("lineup_id", lineup.id).order("batting_order", { ascending: true });
+    const playerIds = (lineupPlayers || []).map((player) => player.player_id);
+    if (playerIds.length === 0) return [];
+    const { data: playerRows } = await supabase.from("players").select("id, first_name, last_name, jersey_number").in("id", playerIds);
+    const playerMap = new Map((playerRows || []).map((player) => [player.id, player]));
+    return (lineupPlayers || []).map((lineupPlayer) => {
+      const player = playerMap.get(lineupPlayer.player_id);
+      return player ? { ...lineupPlayer, first_name: player.first_name, last_name: player.last_name, jersey_number: player.jersey_number } : null;
+    }).filter((player): player is GameLineupPlayerView => player !== null);
   }
+
+  let initialLineup: GameLineupPlayerView[] = [];
+  let initialAwayLineup: GameLineupPlayerView[] = [];
+
+  [initialLineup, initialAwayLineup] = await Promise.all([loadLineup(game.home_team_id), loadLineup(game.away_team_id)]);
 
   return (
     <ScoringConsole
       initialGame={game as Game}
       initialEvents={(events || []) as GameEvent[]}
       initialLineup={initialLineup}
+      initialAwayLineup={initialAwayLineup}
       canScore={canScore}
     />
   );
