@@ -124,7 +124,7 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
         else {row.ab++;if(event.result==="strikeout")row.so++;const key=HITS[event.result];if(key){row.h++;row[key]++;batting.hits++;}}
       }
     }
-    if(["out","strikeout","double_play","triple_play"].includes(event.result)&&fielding){
+    if(["out","strikeout","double_play","triple_play","sacrifice_fly","sacrifice_bunt"].includes(event.result)&&fielding){
       const count=event.result==="double_play"?2:event.result==="triple_play"?3:1;
       const ids=[details.out_fielder_id_1,details.out_fielder_id_2,details.out_fielder_id_3].filter((v):v is string=>typeof v==="string");
       ids.slice(0,count).forEach((id,index)=>{const row=fielding.stats.get(id);if(row){if(index===count-1)row.putouts++;else row.assists++;}});
