@@ -111,7 +111,7 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
       if(event.result==="walk")pitcher.walksAllowed++;
       if(event.result==="strikeout")pitcher.strikeoutsPitched++;
       if(HITS[event.result])pitcher.hitsAllowed++;
-      const er=Number(details.earned_runs??0);if(Number.isFinite(er)&&er>0)pitcher.earnedRuns+=er;
+      const er=Number(details.earned_runs??0);if(["runner_score","single","double","triple","home_run","walk","hbp","error","sacrifice_fly"].includes(event.result)&&Number.isFinite(er)&&er>0)pitcher.earnedRuns+=er;
     }
     if(event.result==="sacrifice_fly"&&batter&&batting){const row=batting.stats.get(batter);if(row){row.pa++;row.sf++;}}
     if(event.result==="sacrifice_bunt"&&batter&&batting){const row=batting.stats.get(batter);if(row){row.pa++;row.sacrifices++;}}
@@ -141,7 +141,7 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
     const outCount=event.result==="double_play"?2:event.result==="triple_play"?3:["strikeout","out","sacrifice_fly","sacrifice_bunt"].includes(event.result)?1:0;
     outs+=outCount;
     if(pitcher&&outCount)pitcher.pitchingOuts+=outCount;
-    if(outs>=3){if(batting)batting.lob += [bases[1],bases[2],bases[3]].filter(Boolean).length;bases=emptyBases();outs=0;if(half==="top")half="bottom";else{half="top";inning++;}}
+    if(outs>=3){if(batting)batting.lob += [bases[1],bases[2],bases[3]].filter(Boolean).length;bases=emptyBases();outs=0;if(half==="top")half="bottom";else{half="top";inning++;}lastPitcherId=null;}
   }
   home.rows=[...home.stats.values()];away.rows=[...away.stats.values()];
   return {home,away};
