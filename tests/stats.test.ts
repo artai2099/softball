@@ -176,4 +176,39 @@ describe("calculateGameStats", () => {
     expect(stats.away.runs).toBe(0);
     expect(stats.away.rows.find((row) => row.playerId === "away-2")?.pa).toBe(0);
   });
+
+  it("preserves second and third base runners through a walk when first is empty", () => {
+    const stats = calculateGameStats(homePlayers, awayPlayers, [
+      event(1, "single", "away-1"),
+      event(2, "double", "away-2"),
+      event(3, "walk", "away-1"),
+      event(4, "home_run", "away-2"),
+    ]);
+
+    expect(stats.away.runs).toBe(4);
+    expect(stats.away.rows.find((row) => row.playerId === "away-1")?.r).toBe(2);
+    expect(stats.away.rows.find((row) => row.playerId === "away-2")).toMatchObject({ r: 2, hr: 1, rbi: 3 });
+  });
+
+  it("uses saved score snapshots for team runs when a batter ID is missing", () => {
+    const stats = calculateGameStats(homePlayers, awayPlayers, [
+      {
+        sequence: 1,
+        result: "home_run",
+        details: {},
+        state_after: {
+          inning: 1, half: "top", outs: 0,
+          home_score: 0, away_score: 1,
+          bases: { "1": null, "2": null, "3": null },
+        },
+        voided_at: null,
+      },
+    ]);
+
+    expect(stats.away.runs).toBe(1);
+    expect(stats.away.runsByInning).toEqual([1]);
+    expect(stats.home.runs).toBe(0);
+    // Team score remains accurate, while player attribution is not invented.
+    expect(stats.away.rows.reduce((total, row) => total + row.r, 0)).toBe(0);
+  });
 });
