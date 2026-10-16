@@ -18,6 +18,18 @@ export type StatLine = {
   sb: number;
   cs: number;
   sf: number;
+  sb: number;
+  cs: number;
+  sacrifices: number;
+  pitchingOuts: number;
+  earnedRuns: number;
+  runsAllowed: number;
+  walksAllowed: number;
+  strikeoutsPitched: number;
+  hitsAllowed: number;
+  putouts: number;
+  assists: number;
+  fieldingErrors: number;
 };
 
 export type TeamBox = {
@@ -42,6 +54,7 @@ export type GameEvent = {
   details: Record<string, unknown> | null;
   voided_at: string | null;
   sequence: number;
+  state_after?: Record<string, unknown> | null;
 };
 
 type Bases = {
@@ -62,6 +75,10 @@ const PA_RESULTS = new Set([
   "error",
   "double_play",
   "triple_play",
+  "sacrifice_fly",
+  "sacrifice_bunt",
+  "stolen_base",
+  "caught_stealing",
 ]);
 
 const HITS: Record<string, keyof StatLine> = {
@@ -92,6 +109,18 @@ function emptyStat(p: Player): StatLine {
     sb: 0,
     cs: 0,
     sf: 0,
+    sb: 0,
+    cs: 0,
+    sacrifices: 0,
+    pitchingOuts: 0,
+    earnedRuns: 0,
+    runsAllowed: 0,
+    walksAllowed: 0,
+    strikeoutsPitched: 0,
+    hitsAllowed: 0,
+    putouts: 0,
+    assists: 0,
+    fieldingErrors: 0,
   };
 }
 
@@ -242,7 +271,9 @@ export function calculateGameStats(
           runnerTeam.runsByInning[inning - 1]++;
         } else if (event.result === "runner_out") {
           outs++;
-          if (outs >= 3) {
+          if (pitcher && ["strikeout", "out", "sacrifice_fly", "sacrifice_bunt"].includes(event.result)) pitcher.pitchingOuts++;
+
+    if (outs >= 3) {
             runnerTeam.lob += [bases[1], bases[2], bases[3]].filter(Boolean).length;
             bases = { 1: null, 2: null, 3: null };
             outs = 0;
@@ -259,7 +290,48 @@ export function calculateGameStats(
       continue;
     }
 
+    const details = event.details ?? {};
+    const pitcherId = typeof details.pitcher_id === "string" ? details.pitcher_id : null;
+    const pitcherTeamName = pitcherId ? playerTeam.get(pitcherId) : undefined;
+    const pitchingTeam = pitcherTeamName === "home" ? home : pitcherTeamName === "away" ? away : null;
+    const pitcher = pitcherId && pitchingTeam ? pitchingTeam.stats.get(pitcherId) : undefined;
+    const defensePlayers = batting === home ? away : batting === away ? home : null;
     if (event.result === "error" && fielding) fielding.errors++;
+    if (event.result === "error") {
+      const position = typeof details.error_position === "string" ? details.error_position : null;
+      const fielderId = typeof details.error_fielder_id === "string" ? details.error_fielder_id : null;
+      if (fielderId && defensePlayers) defensePlayers.stats.get(fielderId)!.fieldingErrors++;
+    }
+    if (pitcher) {
+      if (event.result === "walk") pitcher.walksAllowed++;
+      if (event.result === "strikeout") pitcher.strikeoutsPitched++;
+      if (["single", "double", "triple", "home_run"].includes(event.result)) pitcher.hitsAllowed++;
+      if (event.result === "runner_score" || ["single", "double", "triple", "home_run", "walk", "hbp", "error"].includes(event.result)) {
+        const runsAllowed = Number(details.runs_scored ?? (event.result === "runner_score" ? 1 : 0));
+        if (Number.isFinite(runsAllowed) && runsAllowed > 0) pitcher.runsAllowed += runsAllowed;
+        const earned = Number(details.earned_runs ?? 0);
+        if (Number.isFinite(earned) && earned > 0) pitcher.earnedRuns += earned;
+      }
+    }
+    if (event.result === "stolen_base" && batterId && batting) batting.stats.get(batterId)!.sb++;
+    if (event.result === "caught_stealing" && batterId && batting) batting.stats.get(batterId)!.cs++;
+    if (event.result === "sacrifice_fly" && batterId && batting) {
+      const stat = batting.stats.get(batterId);
+      if (stat) { stat.pa++; stat.sf++; }
+    }
+    if (event.result === "sacrifice_bunt" && batterId && batting) {
+      const stat = batting.stats.get(batterId);
+      if (stat) { stat.pa++; stat.sacrifices++; }
+    }
+    if (["out", "strikeout", "double_play", "triple_play"].includes(event.result) && defensePlayers) {
+      const outCount = event.result === "double_play" ? 2 : event.result === "triple_play" ? 3 : 1;
+      const positions = [details.out_position_1, details.out_position_2, details.out_position_3].filter((v): v is string => typeof v === "string");
+      const ids = [details.out_fielder_id_1, details.out_fielder_id_2, details.out_fielder_id_3].filter((v): v is string => typeof v === "string");
+      ids.slice(0, outCount).forEach((id, index) => {
+        const fielder = defensePlayers.stats.get(id);
+        if (fielder) { if (index === outCount - 1) fielder.putouts++; else fielder.assists++; }
+      });
+    }
 
     if (isPlateAppearance(event) && batterId && batting) {
       const stat = batting.stats.get(batterId);
@@ -267,7 +339,9 @@ export function calculateGameStats(
         stat.pa++;
         if (event.result === "walk") stat.bb++;
         else if (event.result === "hbp") stat.hbp++;
-        else {
+        else if (event.result === "sacrifice_fly" || event.result === "sacrifice_bunt") {
+          // Sacrifice plays count as PA but not AB.
+        } else {
           stat.ab++;
           if (event.result === "strikeout") stat.so++;
           const hitKey = HITS[event.result];
@@ -306,7 +380,7 @@ export function calculateGameStats(
     }
     bases = movement.bases;
 
-    if (event.result === "strikeout" || event.result === "out") outs += 1;
+    if (event.result === "strikeout" || event.result === "out" || event.result === "sacrifice_fly" || event.result === "sacrifice_bunt") outs += 1;
     else if (event.result === "double_play") outs += 2;
     else if (event.result === "triple_play") outs += 3;
 
