@@ -111,7 +111,7 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
       if(event.result==="walk")pitcher.walksAllowed++;
       if(event.result==="strikeout")pitcher.strikeoutsPitched++;
       if(HITS[event.result])pitcher.hitsAllowed++;
-      const er=Number(details.earned_runs??0);if(["runner_score","single","double","triple","home_run","walk","hbp","error","sacrifice_fly"].includes(event.result)&&Number.isFinite(er)&&er>0)pitcher.earnedRuns+=er;
+      const er=Number(details.earned_runs??0);if(Number.isFinite(er)&&er>0)pitcher.earnedRuns+=er;
     }
     if(event.result==="sacrifice_fly"&&batter&&batting){const row=batting.stats.get(batter);if(row){row.pa++;row.sf++;}}
     if(event.result==="sacrifice_bunt"&&batter&&batting){const row=batting.stats.get(batter);if(row){row.pa++;row.sacrifices++;}}
@@ -131,6 +131,7 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
     }
     const movement=advanceBases(event.result,batter,bases);
     const scored=strings(movement.scored);
+    if(pitcher&&scored.length===0){ /* Explicit earned runs are ignored on plays without a run. */ }
     if(pitcher&&scored.length)pitcher.runsAllowed+=scored.length;
     if(batting&&batter&&["walk","hbp","single","double","triple","home_run","sacrifice_fly"].includes(event.result)){
       const row=batting.stats.get(batter);
