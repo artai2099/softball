@@ -641,7 +641,13 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                 </div>
                 <h2 id="runner-action-modal-title">
                   {selectedRunnerBase !== "home" && game.bases?.[selectedRunnerBase]
-                    ? `Runner at ${selectedRunnerBase}B`
+                    ? (() => {
+                        const runnerId = game.bases[selectedRunnerBase];
+                        const runner = scoringPlayers.find((player) => player.player_id === runnerId);
+                        return runner
+                          ? `Runner #${runner.jersey_number} at ${selectedRunnerBase}B`
+                          : `Runner at ${selectedRunnerBase}B`;
+                      })()
                     : "Record batter result"}
                 </h2>
               </div>
@@ -658,7 +664,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
             {selectedRunnerBase !== "home" && game.bases?.[selectedRunnerBase] ? (
               <>
                 <p className="scoringActionModalInstruction">
-                  Choose the result for this runner. Hit advances safely to the next base; a hit from 3B scores a run. Out records a runner out.
+                  Choose what happened to this runner. Advance moves them one base safely; Score records a run from 3B; Out records a runner out.
                 </p>
 
                 <div className="runnerOutcomeButtons">
@@ -668,7 +674,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
                     disabled={!canScore || saving || game.status === "final" || (selectedRunnerBase !== "3" && Boolean(game.bases[selectedRunnerBase === "1" ? "2" : "3"]))}
                     onClick={() => void runnerAction(selectedRunnerBase === "3" ? "score" : "advance")}
                   >
-                    {saving ? "Saving…" : "Hit"}
+                    {saving ? "Saving…" : selectedRunnerBase === "3" ? "Score run" : "Advance"}
                   </button>
                   <button
                     type="button"
