@@ -121,7 +121,7 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
             <tr>
               <th>Player</th><th>PA</th><th>AB</th><th>R</th><th>H</th>
               <th>1B</th><th>2B</th><th>3B</th><th>HR</th><th>RBI</th>
-              <th>BB</th><th>HBP</th><th>SO</th><th>SF</th><th>SB</th><th>CS</th><th>AVG</th>
+              <th>BB</th><th>HBP</th><th>SO</th><th>SF</th><th>SH</th><th>SB</th><th>CS</th><th>AVG</th>
               <th>OBP</th><th>SLG</th><th>OPS</th>
             </tr>
           </thead>
@@ -131,7 +131,7 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
                 <td><strong>#{s.jersey} {s.name}</strong></td>
                 <td>{s.pa}</td><td>{s.ab}</td><td>{s.r}</td><td>{s.h}</td>
                 <td>{s.singles}</td><td>{s.doubles}</td><td>{s.triples}</td><td>{s.hr}</td>
-                <td>{s.rbi}</td><td>{s.bb}</td><td>{s.hbp}</td><td>{s.so}</td><td>{s.sf}</td><td>{s.sb}</td><td>{s.cs}</td>
+                <td>{s.rbi}</td><td>{s.bb}</td><td>{s.hbp}</td><td>{s.so}</td><td>{s.sf}</td><td>{s.sacrifices}</td><td>{s.sb}</td><td>{s.cs}</td>
                 <td>{rate(s.h, s.ab)}</td><td>{obp(s)}</td><td>{slg(s)}</td><td>{ops(s)}</td>
               </tr>
             ))}
@@ -139,7 +139,7 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
               <td><strong>TEAM TOTAL</strong></td>
               <td>{totals.pa}</td><td>{totals.ab}</td><td>{totals.r}</td><td>{totals.h}</td>
               <td>{totals.singles}</td><td>{totals.doubles}</td><td>{totals.triples}</td><td>{totals.hr}</td>
-              <td>{totals.rbi}</td><td>{totals.bb}</td><td>{totals.hbp}</td><td>{totals.so}</td><td>{totals.sf}</td><td>{totals.sb}</td><td>{totals.cs}</td>
+              <td>{totals.rbi}</td><td>{totals.bb}</td><td>{totals.hbp}</td><td>{totals.so}</td><td>{totals.sf}</td><td>{totals.sacrifices}</td><td>{totals.sb}</td><td>{totals.cs}</td>
               <td>{rate(totals.h, totals.ab)}</td><td>{obp(totals)}</td><td>{slg(totals)}</td><td>{ops(totals)}</td>
             </tr>
           </tbody>
