@@ -3,13 +3,27 @@ import { createGame } from "./actions";
 import { requireMembership } from "@/lib/auth";
 
 export default async function NewGamePage() {
-  const { supabase, membership } = await requireMembership();
+  const { supabase, membership, user } = await requireMembership();
 
   const { data: teams } = await supabase
     .from("teams")
     .select("id,name")
     .eq("organization_id", membership.organization_id)
     .order("name");
+
+  const { data: followedMemberships } = await supabase
+    .from("team_memberships")
+    .select("team_id")
+    .eq("user_id", user.id);
+
+  const followedTeamIds = [...new Set((followedMemberships ?? []).map((item) => item.team_id))];
+  const { data: followedTeams } = followedTeamIds.length
+    ? await supabase
+        .from("teams")
+        .select("id,name,city")
+        .in("id", followedTeamIds)
+        .order("name")
+    : { data: [] };
 
   const hasTeams = Boolean(teams?.length);
 
@@ -79,8 +93,26 @@ export default async function NewGamePage() {
             </label>
 
             <label>
-              Opponent
-              <input name="awayName" required />
+              Opponent team you follow
+              <select name="awayTeamId" defaultValue="">
+                <option value="">Choose a followed team (optional)</option>
+                {followedTeams?.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}{team.city ? ` · ${team.city}` : ""}
+                  </option>
+                ))}
+              </select>
+              <span className="muted" style={{ display: "block", marginTop: 6 }}>
+                Choose a team you follow, or enter an opponent name below.
+              </span>
+            </label>
+
+            <label>
+              Opponent name (if not selecting a team)
+              <input
+                name="awayName"
+                placeholder="Enter opponent name"
+              />
             </label>
 
             <label>
