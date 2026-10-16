@@ -18,7 +18,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
   const [pending,setPending]=useState<string|null>(null); const [positions,setPositions]=useState<string[]>([]);
   const [selectedRunnerBase,setSelectedRunnerBase]=useState<"1"|"2"|"3"|"home"|null>(null);
   const [runnerModalOpen,setRunnerModalOpen]=useState(false);
-  const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [pitcherId,setPitcherId]=useState<string>(""); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]); const [awayPlayers,setAwayPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
+  const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [pitcherId,setPitcherId]=useState<string>(""); const [earnedRunsOnPlay,setEarnedRunsOnPlay]=useState("0"); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]); const [awayPlayers,setAwayPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
   const [message,setMessage]=useState(""); const [saving,setSaving]=useState(false);
   const supabase=useMemo(()=>createClient(),[]);
 
@@ -62,7 +62,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
   async function record(result:string,selected:string[]=[]) {
     setSaving(true);setMessage("");
     const fielderForPosition = (position: string) => activeFielders.find(player => player.position.toUpperCase() === position.toUpperCase())?.player_id;
-    const details: Record<string, string> = {};
+    const details: Record<string, unknown> = {};
     if (result === "error") {
       details.error_position = selected[0];
       const fielderId = fielderForPosition(selected[0]);
@@ -76,6 +76,8 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
     }
     if (batterId && battingPlayers.some(player => player.player_id === batterId)) details.batter_id = batterId;
     if (pitcherId && activeFielders.some(player => player.player_id === pitcherId)) details.pitcher_id = pitcherId;
+    const earnedRuns = Number(earnedRunsOnPlay);
+    if (Number.isInteger(earnedRuns) && earnedRuns > 0) details.earned_runs = earnedRuns;
     try{const controller=new AbortController();
       const timeout=window.setTimeout(()=>controller.abort(),10000);
       let response:Response;
@@ -89,7 +91,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
       const contentType=response.headers.get("content-type")||"";
       const body=contentType.includes("application/json") ? await response.json() : {error:`Scoring server returned HTTP ${response.status}`};
       if(response.status===409){const latest=await supabase.from("games").select("*").eq("id",game.id).single();if(latest.data)setGame(latest.data as Game);throw new Error("Another scorekeeper updated the game. The latest score has been loaded.");}
-      if(!response.ok)throw new Error(body.error||"Play could not be recorded"); const updatedGame=body.game as Game; setGame(updatedGame); setBatterId(updatedGame.current_batter_id||null); setPending(null);setPositions([]);setRunnerModalOpen(false);setSelectedRunnerBase(null); if(updatedGame.status==="final"){window.location.assign("/dashboard");}
+      if(!response.ok)throw new Error(body.error||"Play could not be recorded"); const updatedGame=body.game as Game; setGame(updatedGame); setBatterId(updatedGame.current_batter_id||null); setEarnedRunsOnPlay("0"); setPending(null);setPositions([]);setRunnerModalOpen(false);setSelectedRunnerBase(null); if(updatedGame.status==="final"){window.location.assign("/dashboard");}
     }catch(error){setMessage(error instanceof Error?error.message:"Play could not be recorded");}finally{setSaving(false)}
   }
   async function runnerAction(action:"advance"|"score"|"out"|"steal"|"caught_stealing") {
@@ -288,6 +290,10 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
               <div className="liveLabel">
                 Pitch / play
               </div>
+              <label style={{ display: "block", maxWidth: 420, margin: "10px 0" }}>
+                Earned runs on next play (only if officially determined)
+                <input type="number" min="0" max="4" step="1" value={earnedRunsOnPlay} onChange={event=>setEarnedRunsOnPlay(event.target.value)} disabled={saving||game.status==="final"} style={{ display: "block", width: "100%", marginTop: 6 }} />
+              </label>
               <label style={{ display: "block", maxWidth: 420, margin: "10px 0" }}>
                 Pitcher (for pitching stats)
                 <select value={pitcherId} onChange={event=>setPitcherId(event.target.value)} disabled={saving||game.status==="final"} style={{ display: "block", width: "100%", marginTop: 6 }}>
