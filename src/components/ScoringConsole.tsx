@@ -186,7 +186,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
       <section className="cameraPanel">
         <div className="cameraPanelHead">
           <div className="cameraPanelSpacer" aria-hidden="true" />
-          <details className="cameraDetails">
+          <details className="cameraDetails" open>
             <summary className="gameCameraButton">
               <span className="gameCameraIcon" aria-hidden="true">▶</span>
               <span className="gameCameraCopy">
