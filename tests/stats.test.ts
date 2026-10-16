@@ -136,6 +136,26 @@ describe("calculateGameStats", () => {
     expect(stats.away.rows.find(row => row.playerId === "away-1")).toMatchObject({ sb: 1, cs: 1 });
   });
 
+  it("uses saved scoring snapshots to keep later runs in the correct inning", () => {
+    const stats = calculateGameStats(homePlayers, awayPlayers, [
+      {
+        sequence: 1,
+        result: "runner_score",
+        details: { runner_id: "away-1", base_from: "3" },
+        state_after: { inning: 2, half: "top", outs: 0, bases: { "1": null, "2": null, "3": null } },
+        voided_at: null,
+      },
+      {
+        sequence: 2,
+        result: "home_run",
+        details: { batter_id: "away-2" },
+        state_after: { inning: 2, half: "top", outs: 0, bases: { "1": null, "2": null, "3": null } },
+        voided_at: null,
+      },
+    ]);
+    expect(stats.away.runsByInning).toEqual([0, 2]);
+  });
+
   it("attributes plate appearances to an incoming substitute", () => {
     const substitute: Player = { player_id: "home-sub", batting_order: 1, first_name: "Home", last_name: "Sub", jersey_number: 12 };
     const stats = calculateGameStats([...homePlayers, substitute], awayPlayers, [
