@@ -26,6 +26,7 @@ export const scoreEventSchema = z.object({
     : value.result === "out" ? ["out_position_1"]
     : value.result === "double_play" ? ["out_position_1", "out_position_2"]
     : value.result === "triple_play" ? ["out_position_1", "out_position_2", "out_position_3"]
+    : value.result === "sacrifice_fly" || value.result === "sacrifice_bunt" ? ["out_position_1"]
     : [];
   for (const key of required) {
     if (!value.details[key as keyof typeof value.details]) {
