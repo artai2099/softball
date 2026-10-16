@@ -227,16 +227,25 @@ export function calculateGameStats(
           }
         }
 
-        if (event.result === "walk" || event.result === "hbp" || event.result === "single" ||
-            event.result === "double" || event.result === "triple" || event.result === "home_run") {
-          // RBI is credited from the run-producing outcome supported by the current scorer.
-          const explicitRbi = typeof event.details?.rbi === "number" ? event.details.rbi : null;
-          if (explicitRbi !== null) stat.rbi += explicitRbi;
-        }
       }
     }
 
     const movement = advanceBases(event.result, batterId, bases);
+    if (
+      batting &&
+      batterId &&
+      ["walk", "hbp", "single", "double", "triple", "home_run"].includes(event.result)
+    ) {
+      const batterStat = batting.stats.get(batterId);
+      if (batterStat) {
+        // Prefer an explicitly scored RBI total when the event supplies one.
+        // Otherwise infer RBIs from runners crossing home on this scoring outcome.
+        const explicitRbi = event.details?.rbi;
+        batterStat.rbi += typeof explicitRbi === "number"
+          ? Math.max(0, explicitRbi)
+          : uniqueStrings(movement.scored).length;
+      }
+    }
     for (const runnerId of uniqueStrings(movement.scored)) {
       if (batting) {
         addRun(batting, batting.stats, runnerId);
