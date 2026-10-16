@@ -15,6 +15,7 @@ export const scoreEventSchema = z.object({
     out_fielder_id_2: z.string().uuid().optional(),
     out_fielder_id_3: z.string().uuid().optional(),
     rbi: z.number().int().nonnegative().optional(),
+    earned_runs: z.number().int().nonnegative().optional(),
     error_position: defensivePosition.optional(),
     out_position_1: defensivePosition.optional(),
     out_position_2: defensivePosition.optional(),
