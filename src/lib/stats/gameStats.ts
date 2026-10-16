@@ -96,7 +96,8 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
         } else if(event.result==="runner_out"||event.result==="caught_stealing"){
           if(event.result==="caught_stealing"&&id){const row=runnerTeam.stats.get(id);if(row)row.cs++;}
           outs++;
-          if(outs>=3){runnerTeam.lob += [bases[1],bases[2],bases[3]].filter(Boolean).length;bases=emptyBases();outs=0;if(half==="top")half="bottom";else{half="top";inning++;}}
+          if(activePitcher)activePitcher.pitchingOuts++;
+          if(outs>=3){runnerTeam.lob += [bases[1],bases[2],bases[3]].filter(Boolean).length;bases=emptyBases();outs=0;if(half==="top")half="bottom";else{half="top";inning++;}lastPitcherId=null;}
         }
       }
       ensureInning(home,inning);ensureInning(away,inning);continue;
