@@ -84,16 +84,23 @@ describe("calculateGameStats", () => {
     expect(stats.away.rows.find((row) => row.playerId === "away-1")?.r).toBe(0);
   });
 
-  it("calculates sacrifice flies without charging an at-bat", () => {
+  it("calculates sacrifice flies, RBI, and explicit earned runs without charging an at-bat", () => {
     const stats = calculateGameStats(homePlayers, awayPlayers, [
-      event(1, "single", "away-1"),
-      { ...event(2, "sacrifice_fly", "away-2"), details: { batter_id: "away-2", pitcher_id: "home-1" } },
+      event(1, "triple", "away-1"),
+      {
+        sequence: 2,
+        result: "sacrifice_fly",
+        details: { batter_id: "away-2", pitcher_id: "home-1", earned_runs: 1 },
+        voided_at: null,
+      },
     ]);
     expect(stats.away.rows.find(row => row.playerId === "away-2")).toMatchObject({
-      pa: 1, ab: 0, sf: 1,
+      pa: 1, ab: 0, sf: 1, rbi: 1,
     });
-    expect(stats.away.runs).toBe(0);
-    expect(stats.home.rows.find(row => row.playerId === "home-1")?.pitchingOuts).toBe(1);
+    expect(stats.away.runs).toBe(1);
+    expect(stats.home.rows.find(row => row.playerId === "home-1")).toMatchObject({
+      pitchingOuts: 1, runsAllowed: 1, earnedRuns: 1,
+    });
   });
 
   it("attributes pitching outs and defensive putouts only when player IDs are recorded", () => {
