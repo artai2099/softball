@@ -215,6 +215,11 @@ export default async function GameStatsPage({
   const homeName = game.home_name ?? "Home";
   const awayName = game.away_name ?? "Away";
   const final = game.status === "final";
+  const savedHomeRuns = Number(game.home_score ?? 0);
+  const savedAwayRuns = Number(game.away_score ?? 0);
+  const runsReconcile =
+    stats.home.runs === savedHomeRuns &&
+    stats.away.runs === savedAwayRuns;
   const scoreText = `${awayName} ${game.away_score ?? 0} - ${game.home_score ?? 0} ${homeName}`;
 
   return (
@@ -240,6 +245,21 @@ export default async function GameStatsPage({
       </section>
 
       <Linescore home={stats.home} away={stats.away} homeName={homeName} awayName={awayName} />
+
+      <section className="panel" aria-live="polite">
+        <p className="eyebrow">Score integrity</p>
+        <h2>{runsReconcile ? "Team runs reconcile" : "Statistics need review"}</h2>
+        {runsReconcile ? (
+          <p className="notice">
+            Event-derived team runs match the saved scoreboard ({awayName} {stats.away.runs}, {homeName} {stats.home.runs}).
+            This check validates team runs only, not every individual statistic.
+          </p>
+        ) : (
+          <p className="notice">
+            Event-derived runs do not match the saved scoreboard. {awayName}: calculated {stats.away.runs}, saved {savedAwayRuns}; {homeName}: calculated {stats.home.runs}, saved {savedHomeRuns}. Review the scoring history before relying on these statistics.
+          </p>
+        )}
+      </section>
 
       <StatTable team={stats.away} name={awayName} />
       <StatTable team={stats.home} name={homeName} />
