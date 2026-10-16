@@ -2,10 +2,12 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   calculateGameStats,
+  era,
   obp,
   ops,
   rate,
   slg,
+  whip,
   type GameEvent,
   type Player,
   type StatLine,
@@ -87,6 +89,7 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
       walksAllowed: t.walksAllowed + s.walksAllowed,
       strikeoutsPitched: t.strikeoutsPitched + s.strikeoutsPitched,
       hitsAllowed: t.hitsAllowed + s.hitsAllowed,
+      hitBattersAllowed: t.hitBattersAllowed + s.hitBattersAllowed,
       putouts: t.putouts + s.putouts,
       assists: t.assists + s.assists,
       fieldingErrors: t.fieldingErrors + s.fieldingErrors,
@@ -100,7 +103,7 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
       pa: 0, ab: 0, r: 0, h: 0, singles: 0, doubles: 0, triples: 0,
       hr: 0, rbi: 0, bb: 0, hbp: 0, so: 0, sb: 0, cs: 0, sf: 0,
       sacrifices: 0, pitchingOuts: 0, earnedRuns: 0, runsAllowed: 0,
-      walksAllowed: 0, strikeoutsPitched: 0, hitsAllowed: 0,
+      walksAllowed: 0, strikeoutsPitched: 0, hitsAllowed: 0, hitBattersAllowed: 0,
       putouts: 0, assists: 0, fieldingErrors: 0,
     },
   );
@@ -295,10 +298,13 @@ export default async function GameStatsPage({
       <section className="panel" id="pitching">
         <p className="eyebrow">Pitching</p>
         <h2>Pitching</h2>
-        <p className="notice">Pitching totals are calculated only for events with an explicitly recorded pitcher. ER remains zero unless the scorer explicitly records earned runs; no earned runs are guessed from the box score.</p>
-        <div style={{ overflowX: "auto" }}><table style={{ width: "100%", minWidth: 700 }}>
-          <thead><tr><th>Pitcher</th><th>IP</th><th>H</th><th>R</th><th>ER</th><th>BB</th><th>SO</th></tr></thead>
-          <tbody>{[...stats.home.rows, ...stats.away.rows].filter(p => p.pitchingOuts + p.hitsAllowed + p.runsAllowed + p.walksAllowed + p.strikeoutsPitched > 0).map(p => <tr key={p.playerId}><td>#{p.jersey} {p.name}</td><td>{Math.floor(p.pitchingOuts / 3)}.{p.pitchingOuts % 3}</td><td>{p.hitsAllowed}</td><td>{p.runsAllowed}</td><td>{p.earnedRuns}</td><td>{p.walksAllowed}</td><td>{p.strikeoutsPitched}</td></tr>)}</tbody>
+        <p className="notice">Pitching totals are calculated only for events with a recorded pitcher. ERA is normalized to 7 innings; WHIP is (hits + walks) per inning pitched. ER is never inferred from the scoreboard and remains zero unless the scorer records earned runs.</p>
+        <div style={{ overflowX: "auto" }}><table style={{ width: "100%", minWidth: 1060 }}>
+          <thead><tr><th>Pitcher</th><th>Team</th><th>IP</th><th>H</th><th>R</th><th>ER</th><th>BB</th><th>HBP</th><th>SO</th><th>ERA</th><th>WHIP</th></tr></thead>
+          <tbody>{[
+            ...stats.home.rows.map(p => ({ ...p, pitchingTeam: homeName })),
+            ...stats.away.rows.map(p => ({ ...p, pitchingTeam: awayName })),
+          ].filter(p => p.pitchingOuts + p.hitsAllowed + p.runsAllowed + p.walksAllowed + p.hitBattersAllowed + p.strikeoutsPitched > 0).map(p => <tr key={p.playerId}><td>#{p.jersey} {p.name}</td><td>{p.pitchingTeam}</td><td>{Math.floor(p.pitchingOuts / 3)}.{p.pitchingOuts % 3}</td><td>{p.hitsAllowed}</td><td>{p.runsAllowed}</td><td>{p.earnedRuns}</td><td>{p.walksAllowed}</td><td>{p.hitBattersAllowed}</td><td>{p.strikeoutsPitched}</td><td>{era(p)}</td><td>{whip(p)}</td></tr>)}</tbody>
         </table></div>
       </section>
 
