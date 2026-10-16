@@ -77,9 +77,19 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
       bb: t.bb + s.bb,
       hbp: t.hbp + s.hbp,
       so: t.so + s.so,
-      sb: 0,
-      cs: 0,
-      sf: 0,
+      sb: t.sb + s.sb,
+      cs: t.cs + s.cs,
+      sf: t.sf + s.sf,
+      sacrifices: t.sacrifices + s.sacrifices,
+      pitchingOuts: t.pitchingOuts + s.pitchingOuts,
+      earnedRuns: t.earnedRuns + s.earnedRuns,
+      runsAllowed: t.runsAllowed + s.runsAllowed,
+      walksAllowed: t.walksAllowed + s.walksAllowed,
+      strikeoutsPitched: t.strikeoutsPitched + s.strikeoutsPitched,
+      hitsAllowed: t.hitsAllowed + s.hitsAllowed,
+      putouts: t.putouts + s.putouts,
+      assists: t.assists + s.assists,
+      fieldingErrors: t.fieldingErrors + s.fieldingErrors,
       playerId: "team",
       name: "TEAM TOTAL",
       jersey: 0,
@@ -89,6 +99,9 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
       playerId: "team", name: "TEAM TOTAL", jersey: 0, order: null,
       pa: 0, ab: 0, r: 0, h: 0, singles: 0, doubles: 0, triples: 0,
       hr: 0, rbi: 0, bb: 0, hbp: 0, so: 0, sb: 0, cs: 0, sf: 0,
+      sacrifices: 0, pitchingOuts: 0, earnedRuns: 0, runsAllowed: 0,
+      walksAllowed: 0, strikeoutsPitched: 0, hitsAllowed: 0,
+      putouts: 0, assists: 0, fieldingErrors: 0,
     },
   );
 
@@ -108,7 +121,7 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
             <tr>
               <th>Player</th><th>PA</th><th>AB</th><th>R</th><th>H</th>
               <th>1B</th><th>2B</th><th>3B</th><th>HR</th><th>RBI</th>
-              <th>BB</th><th>HBP</th><th>SO</th><th>AVG</th>
+              <th>BB</th><th>HBP</th><th>SO</th><th>SF</th><th>SB</th><th>CS</th><th>AVG</th>
               <th>OBP</th><th>SLG</th><th>OPS</th>
             </tr>
           </thead>
@@ -118,7 +131,7 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
                 <td><strong>#{s.jersey} {s.name}</strong></td>
                 <td>{s.pa}</td><td>{s.ab}</td><td>{s.r}</td><td>{s.h}</td>
                 <td>{s.singles}</td><td>{s.doubles}</td><td>{s.triples}</td><td>{s.hr}</td>
-                <td>{s.rbi}</td><td>{s.bb}</td><td>{s.hbp}</td><td>{s.so}</td>
+                <td>{s.rbi}</td><td>{s.bb}</td><td>{s.hbp}</td><td>{s.so}</td><td>{s.sf}</td><td>{s.sb}</td><td>{s.cs}</td>
                 <td>{rate(s.h, s.ab)}</td><td>{obp(s)}</td><td>{slg(s)}</td><td>{ops(s)}</td>
               </tr>
             ))}
@@ -126,7 +139,7 @@ function StatTable({ team, name }: { team: TeamBox; name: string }) {
               <td><strong>TEAM TOTAL</strong></td>
               <td>{totals.pa}</td><td>{totals.ab}</td><td>{totals.r}</td><td>{totals.h}</td>
               <td>{totals.singles}</td><td>{totals.doubles}</td><td>{totals.triples}</td><td>{totals.hr}</td>
-              <td>{totals.rbi}</td><td>{totals.bb}</td><td>{totals.hbp}</td><td>{totals.so}</td>
+              <td>{totals.rbi}</td><td>{totals.bb}</td><td>{totals.hbp}</td><td>{totals.so}</td><td>{totals.sf}</td><td>{totals.sb}</td><td>{totals.cs}</td>
               <td>{rate(totals.h, totals.ab)}</td><td>{obp(totals)}</td><td>{slg(totals)}</td><td>{ops(totals)}</td>
             </tr>
           </tbody>
@@ -201,7 +214,7 @@ export default async function GameStatsPage({
   if (!membership) notFound();
 
   const [{ data: events }, homePlayers, awayPlayers] = await Promise.all([
-    supabase.from("game_events").select("result,details,voided_at,sequence").eq("game_id", id).order("sequence"),
+    supabase.from("game_events").select("result,details,voided_at,sequence,state_after").eq("game_id", id).order("sequence"),
     loadPlayers(supabase, id, game.home_team_id),
     loadPlayers(supabase, id, game.away_team_id),
   ]);
@@ -267,17 +280,21 @@ export default async function GameStatsPage({
       <section className="panel" id="pitching">
         <p className="eyebrow">Pitching</p>
         <h2>Pitching</h2>
-        <p className="notice">
-          Player pitching is not shown yet because the current event model does not store the pitcher for each plate appearance. Game pitch count remains available on the game record.
-        </p>
+        <p className="notice">Pitching totals are calculated only for events with an explicitly recorded pitcher. ER remains zero unless the scorer explicitly records earned runs; no earned runs are guessed from the box score.</p>
+        <div style={{ overflowX: "auto" }}><table style={{ width: "100%", minWidth: 700 }}>
+          <thead><tr><th>Pitcher</th><th>IP</th><th>H</th><th>R</th><th>ER</th><th>BB</th><th>SO</th></tr></thead>
+          <tbody>{[...stats.home.rows, ...stats.away.rows].filter(p => p.pitchingOuts + p.hitsAllowed + p.runsAllowed + p.walksAllowed + p.strikeoutsPitched > 0).map(p => <tr key={p.playerId}><td>#{p.jersey} {p.name}</td><td>{Math.floor(p.pitchingOuts / 3)}.{p.pitchingOuts % 3}</td><td>{p.hitsAllowed}</td><td>{p.runsAllowed}</td><td>{p.earnedRuns}</td><td>{p.walksAllowed}</td><td>{p.strikeoutsPitched}</td></tr>)}</tbody>
+        </table></div>
       </section>
 
       <section className="panel" id="fielding">
         <p className="eyebrow">Fielding</p>
         <h2>Fielding</h2>
-        <p className="notice">
-          Defensive positions and error events are recorded, but the current model does not yet identify the individual fielder receiving every putout/assist. No individual fielding totals are fabricated.
-        </p>
+        <p className="notice">Individual totals are shown only when the play records a fielder ID. Existing plays that record positions but not fielder IDs cannot be attributed retroactively.</p>
+        <div style={{ overflowX: "auto" }}><table style={{ width: "100%", minWidth: 500 }}>
+          <thead><tr><th>Player</th><th>PO</th><th>A</th><th>E</th></tr></thead>
+          <tbody>{[...stats.home.rows, ...stats.away.rows].filter(p => p.putouts + p.assists + p.fieldingErrors > 0).map(p => <tr key={p.playerId}><td>#{p.jersey} {p.name}</td><td>{p.putouts}</td><td>{p.assists}</td><td>{p.fieldingErrors}</td></tr>)}</tbody>
+        </table></div>
       </section>
     </div>
   );
