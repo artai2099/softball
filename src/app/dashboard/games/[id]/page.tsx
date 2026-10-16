@@ -83,16 +83,6 @@ export default async function GamePage({
 
   return (
     <>
-      {canScore && game.status === "scheduled" && (
-        <section className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
-          <div>
-            <p className="eyebrow" style={{ marginBottom: 5 }}>Before first pitch</p>
-            <h2 style={{ margin: 0 }}>Review your starting lineup</h2>
-            <p className="muted" style={{ marginBottom: 0, marginTop: 5 }}>Set batting order and defensive positions before scoring begins.</p>
-          </div>
-          <Link className="button red" href={`/dashboard/games/${game.id}/lineup`}>Edit lineup</Link>
-        </section>
-      )}
     <ScoringConsole
       initialGame={game as Game}
       initialEvents={(events || []) as GameEvent[]}
