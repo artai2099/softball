@@ -12,12 +12,12 @@ import { YouTubeStreamControl } from "./YouTubeStreamControl";
 
 const labels: Record<string,string> = { ball:"Ball",strike:"Strike",foul:"Foul",single:"1B",double:"2B",triple:"3B",home_run:"HR",walk:"Walk",hbp:"HBP",strikeout:"Strikeout",out:"Out",error:"Error",double_play:"Double play",triple_play:"Triple play" };
 
-export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScore }: { initialGame: Game;initialEvents:GameEvent[];initialLineup:GameLineupPlayerView[];canScore:boolean }) {
+export function ScoringConsole({ initialGame,initialEvents,initialLineup,initialAwayLineup,canScore }: { initialGame: Game;initialEvents:GameEvent[];initialLineup:GameLineupPlayerView[];initialAwayLineup:GameLineupPlayerView[];canScore:boolean }) {
   const [game,setGame]=useState(initialGame); const [events,setEvents]=useState(initialEvents);
   const [pending,setPending]=useState<string|null>(null); const [positions,setPositions]=useState<string[]>([]);
   const [selectedRunnerBase,setSelectedRunnerBase]=useState<"1"|"2"|"3"|"home"|null>(null);
   const [runnerModalOpen,setRunnerModalOpen]=useState(false);
-  const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
+  const [batterId,setBatterId]=useState<string|null>(initialGame.current_batter_id); const [players,setPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]); const [awayPlayers,setAwayPlayers]=useState<{id:string;first_name:string;last_name:string;jersey_number:number}[]>([]);
   const [message,setMessage]=useState(""); const [saving,setSaving]=useState(false);
   const supabase=useMemo(()=>createClient(),[]);
 
@@ -39,40 +39,26 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
         created_at: "",
       }));
 
+  const awayScoringPlayers = initialAwayLineup.length > 0 ? initialAwayLineup : awayPlayers.map((player) => ({ id: player.id, player_id: player.id, first_name: player.first_name, last_name: player.last_name, jersey_number: player.jersey_number, batting_order: null, position: "", starter: true, active: true, entered_at: null, left_at: null, lineup_id: "", created_at: "" }));
+  const battingPlayers = game.half === "top" ? awayScoringPlayers : scoringPlayers;
+
   useEffect(() => {
-    if (game.half !== "bottom") {
-      if (batterId !== null) {
-        setBatterId(null);
-      }
-      return;
-    }
-
-    if (scoringPlayers.length === 0) {
-      return;
-    }
-
-    const ordered = [...scoringPlayers]
-      .filter((player) => player.active && player.batting_order != null)
-      .sort((a, b) => (a.batting_order ?? 0) - (b.batting_order ?? 0));
-
-    const nextBatter = game.current_batter_id || ordered[0]?.player_id || null;
-
-    if (nextBatter && batterId !== nextBatter) {
-      setBatterId(nextBatter);
-    }
-  }, [game.half, game.current_batter_id, scoringPlayers, batterId]);
+    if (battingPlayers.length === 0) return;
+    const ordered = [...battingPlayers].filter((player) => player.active && player.batting_order != null).sort((a, b) => (a.batting_order ?? 0) - (b.batting_order ?? 0));
+    const nextBatter = game.half === "bottom" ? game.current_batter_id || ordered[0]?.player_id || null : ordered[0]?.player_id || null;
+    if (nextBatter && (!batterId || !battingPlayers.some((player) => player.player_id === batterId))) setBatterId(nextBatter);
+  }, [game.half, game.current_batter_id, battingPlayers, batterId]);
   useEffect(()=>{ const channel=supabase.channel(`game-${game.id}`).on("postgres_changes",{event:"UPDATE",schema:"public",table:"games",filter:`id=eq.${game.id}`},p=>setGame(p.new as Game)).on("postgres_changes",{event:"INSERT",schema:"public",table:"game_events",filter:`game_id=eq.${game.id}`},p=>setEvents(c=>c.some(e=>e.id===p.new.id)?c:[...c,p.new as GameEvent])).subscribe(); return()=>{void supabase.removeChannel(channel)}; },[game.id,supabase]);
 
   useEffect(()=>{ if(!game.home_team_id)return; void supabase.from("players").select("id,first_name,last_name,jersey_number").eq("team_id",game.home_team_id).eq("active",true).order("jersey_number").then(({data})=>setPlayers(data||[])); },[game.home_team_id,supabase]);
 
+  useEffect(()=>{ if(!game.away_team_id)return; void supabase.from("players").select("id,first_name,last_name,jersey_number").eq("team_id",game.away_team_id).eq("active",true).order("jersey_number").then(({data})=>setAwayPlayers(data||[])); },[game.away_team_id,supabase]);
+
   const required=pending==="error"||pending==="out"?1:pending==="double_play"?2:pending==="triple_play"?3:0;
-  const activeBatter =
-    game.half === "bottom"
-      ? scoringPlayers.find(p => p.player_id === batterId)
-      : undefined;
+  const activeBatter = battingPlayers.find(p => p.player_id === batterId);
   async function record(result:string,selected:string[]=[]) {
     setSaving(true);setMessage("");
-    const details={...(result==="error"?{error_position:selected[0]}:Object.fromEntries(selected.map((position,index)=>[`out_position_${index+1}`,position]))),...(game.half==="bottom"&&batterId?{batter_id:batterId}:{})};
+    const details={...(result==="error"?{error_position:selected[0]}:Object.fromEntries(selected.map((position,index)=>[`out_position_${index+1}`,position]))),...(batterId && battingPlayers.some((player) => player.player_id === batterId) ? { batter_id: batterId } : {})};
     try{const controller=new AbortController();
       const timeout=window.setTimeout(()=>controller.abort(),10000);
       let response:Response;
@@ -247,27 +233,11 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,canScor
 
               <div className="batterPicker">
 
-                {game.half==="bottom"&&scoringPlayers.length>0&&(
-                  initialLineup.length > 0 ? (
-                    <span className="notice">
-                      Batting order · {activeBatter?.batting_order ?? 1}
-                    </span>
-                  ) : (
-                    <select
-                      value={batterId||""}
-                      onChange={e=>setBatterId(e.target.value||null)}
-                      disabled={!canScore||saving||game.status==="final"}
-                    >
-                      <option value="">Select batter</option>
-
-                      {scoringPlayers.map(p=>(
-                        <option key={p.player_id} value={p.player_id}>
-                          #{p.jersey_number} {p.first_name} {p.last_name}
-                        </option>
-                      ))}
-
-                    </select>
-                  )
+                {battingPlayers.length>0&&(
+                  <select value={batterId||""} onChange={e=>setBatterId(e.target.value||null)} disabled={!canScore||saving||game.status==="final"} aria-label={game.half === "top" ? "Select opponent batter" : "Select home batter"}>
+                    <option value="">Select batter</option>
+                    {battingPlayers.map(p=>(<option key={p.player_id} value={p.player_id}>#{p.jersey_number} {p.first_name} {p.last_name}{p.batting_order != null ? ` · batting ${p.batting_order}` : ""}</option>))}
+                  </select>
                 )}
 
               </div>
