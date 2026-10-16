@@ -129,7 +129,16 @@ describe("calculateGameStats", () => {
     expect(stats.away.rows.find(row => row.playerId === "away-1")).toMatchObject({ sb: 1, cs: 1 });
   });
 
-  it("does not count voided events in batting totals", () => {
+  it("attributes plate appearances to an incoming substitute", () => {
+    const substitute: Player = { player_id: "home-sub", batting_order: 1, first_name: "Home", last_name: "Sub", jersey_number: 12 };
+    const stats = calculateGameStats([...homePlayers, substitute], awayPlayers, [
+      { sequence: 1, result: "single", details: { batter_id: "home-sub" }, voided_at: null },
+    ]);
+    expect(stats.home.rows.find(row => row.playerId === "home-sub")).toMatchObject({ pa: 1, ab: 1, h: 1, singles: 1 });
+    expect(stats.home.rows.find(row => row.playerId === "home-1")?.pa).toBe(0);
+  });
+
+  it("reverses voided events after undo without retaining their stats", () => {
     const stats = calculateGameStats(homePlayers, awayPlayers, [
       { ...event(1, "home_run", "away-2"), voided_at: "2026-10-15T12:00:00Z" },
     ]);
