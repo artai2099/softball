@@ -56,7 +56,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
 
   useEffect(()=>{ if(!game.away_team_id)return; void supabase.from("players").select("id,first_name,last_name,jersey_number").eq("team_id",game.away_team_id).eq("active",true).order("jersey_number").then(({data})=>setAwayPlayers(data||[])); },[game.away_team_id,supabase]);
 
-  const required=pending==="error"||pending==="out"?1:pending==="double_play"?2:pending==="triple_play"?3:0;
+  const required=pending==="error"||pending==="out"||pending==="sacrifice_fly"||pending==="sacrifice_bunt"?1:pending==="double_play"?2:pending==="triple_play"?3:0;
   const activeBatter = battingPlayers.find(p => p.player_id === batterId);
   const activeFielders = fieldingPlayers.filter(p => p.active);
   async function record(result:string,selected:string[]=[]) {
@@ -157,7 +157,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
     };
   }, [pending, runnerModalOpen]);
 
-  function choose(result:string){if(["out","error","double_play","triple_play"].includes(result)){setPending(result);setPositions([])}else void record(result)}
+  function choose(result:string){if(["out","error","double_play","triple_play","sacrifice_fly","sacrifice_bunt"].includes(result)){setPending(result);setPositions([])}else void record(result)}
   function selectPosition(position:string){setPositions(c=>c.length<required?[...c,position]:[...c.slice(0,-1),position])}
   async function undo(){if(game.status==="final")return;setSaving(true);setMessage("");try{const r=await fetch(`/api/games/${game.id}/undo`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({expectedVersion:game.version})});const b=await r.json();if(!r.ok)throw new Error(b.error||"Undo failed");setGame(b.game as Game);setBatterId((b.game as Game).current_batter_id||null)}catch(e){setMessage(e instanceof Error?e.message:"Undo failed")}finally{setSaving(false)}}
   async function finish(){if(!window.confirm("Finalize this game? You can reopen it later."))return;setSaving(true);setMessage("");try{const r=await fetch(`/api/games/${game.id}/finish`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({expectedVersion:game.version})});const b=await r.json();if(!r.ok)throw new Error(b.error||"Game could not be finalized");setGame(b.game as Game);window.location.assign("/dashboard")}catch(e){setMessage(e instanceof Error?e.message:"Game could not be finalized")}finally{setSaving(false)}}
