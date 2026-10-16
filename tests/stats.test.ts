@@ -178,16 +178,23 @@ describe("calculateGameStats", () => {
   });
 
   it("preserves second and third base runners through a walk when first is empty", () => {
-    const stats = calculateGameStats(homePlayers, awayPlayers, [
+    const hitters: Player[] = [
+      ...awayPlayers,
+      { player_id: "away-3", batting_order: 3, first_name: "Away", last_name: "Walker", jersey_number: 10 },
+      { player_id: "away-4", batting_order: 4, first_name: "Away", last_name: "Homer", jersey_number: 11 },
+    ];
+    const stats = calculateGameStats(homePlayers, hitters, [
       event(1, "single", "away-1"),
       event(2, "double", "away-2"),
-      event(3, "walk", "away-1"),
-      event(4, "home_run", "away-2"),
+      event(3, "walk", "away-3"),
+      event(4, "home_run", "away-4"),
     ]);
 
     expect(stats.away.runs).toBe(4);
-    expect(stats.away.rows.find((row) => row.playerId === "away-1")?.r).toBe(2);
-    expect(stats.away.rows.find((row) => row.playerId === "away-2")).toMatchObject({ r: 2, hr: 1, rbi: 3 });
+    expect(stats.away.rows.find((row) => row.playerId === "away-1")?.r).toBe(1);
+    expect(stats.away.rows.find((row) => row.playerId === "away-2")?.r).toBe(1);
+    expect(stats.away.rows.find((row) => row.playerId === "away-3")?.r).toBe(1);
+    expect(stats.away.rows.find((row) => row.playerId === "away-4")).toMatchObject({ r: 1, hr: 1, rbi: 4 });
   });
 
   it("uses saved score snapshots for team runs when a batter ID is missing", () => {
