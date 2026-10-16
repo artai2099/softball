@@ -295,7 +295,7 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
                 Pitch / play
               </div>
               <label style={{ display: "block", maxWidth: 420, margin: "10px 0" }}>
-                Earned runs on next play (only if officially determined)
+                Earned runs on next batter result (only if officially determined)
                 <input type="number" min="0" max="4" step="1" value={earnedRunsOnPlay} onChange={event=>setEarnedRunsOnPlay(event.target.value)} disabled={saving||game.status==="final"} style={{ display: "block", width: "100%", marginTop: 6 }} />
               </label>
               <label style={{ display: "block", maxWidth: 420, margin: "10px 0" }}>
