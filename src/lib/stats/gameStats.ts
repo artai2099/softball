@@ -18,8 +18,6 @@ export type StatLine = {
   sb: number;
   cs: number;
   sf: number;
-  sb: number;
-  cs: number;
   sacrifices: number;
   pitchingOuts: number;
   earnedRuns: number;
@@ -109,8 +107,6 @@ function emptyStat(p: Player): StatLine {
     sb: 0,
     cs: 0,
     sf: 0,
-    sb: 0,
-    cs: 0,
     sacrifices: 0,
     pitchingOuts: 0,
     earnedRuns: 0,
@@ -245,10 +241,7 @@ export function calculateGameStats(
     while ((home.runsByInning.length < inning)) home.runsByInning.push(0);
     while ((away.runsByInning.length < inning)) away.runsByInning.push(0);
 
-    // Runner actions are first-class scoring events, not plate appearances.
-    // Attribute a runner's run to the runner, and update the reconstructed bases
-    // before processing the next event. This keeps LOB and inning runs consistent
-    // when the scorekeeper manually advances, scores, or retires a runner.
+    // Runner actions are separate from plate appearances.
     if (
       event.result === "runner_advance" ||
       event.result === "runner_score" ||
@@ -256,7 +249,59 @@ export function calculateGameStats(
       event.result === "stolen_base" ||
       event.result === "caught_stealing"
     ) {
-      const details = event.details ?? {};
+      const runnerDetails = event.details ?? {};
+      const runnerId = typeof runnerDetails.runner_id === "string" ? runnerDetails.runner_id : null;
+      const runnerTeamName = runnerId ? playerTeam.get(runnerId) : undefined;
+      const runnerTeam = runnerTeamName === "home" ? home
+        : runnerTeamName === "away" ? away
+        : half === "top" ? away : home;
+      const runnerStats = runnerTeam.stats;
+      const baseFrom = runnerDetails.base_from === "1" || runnerDetails.base_from === "2" || runnerDetails.base_from === "3"
+        ? runnerDetails.base_from : null;
+      const baseTo = runnerDetails.base_to === "1" || runnerDetails.base_to === "2" || runnerDetails.base_to === "3"
+        ? runnerDetails.base_to : null;
+      const activePitcherTeam = lastPitcherId ? playerTeam.get(lastPitcherId) : undefined;
+      const activePitcher = lastPitcherId
+        ? (activePitcherTeam === "home" ? home.stats.get(lastPitcherId) : activePitcherTeam === "away" ? away.stats.get(lastPitcherId) : undefined)
+        : undefined;
+
+      if ((event.result === "runner_advance" || event.result === "stolen_base") && baseFrom && baseTo) {
+        const movedRunner = bases[Number(baseFrom) as 1 | 2 | 3] ?? runnerId;
+        bases[Number(baseFrom) as 1 | 2 | 3] = null;
+        bases[Number(baseTo) as 1 | 2 | 3] = movedRunner;
+        if (event.result === "stolen_base" && movedRunner) {
+          const runnerStat = runnerStats.get(movedRunner);
+          if (runnerStat) runnerStat.sb++;
+        }
+      } else if ((event.result === "runner_score" || event.result === "runner_out" || event.result === "caught_stealing") && baseFrom) {
+        const movedRunner = bases[Number(baseFrom) as 1 | 2 | 3] ?? runnerId;
+        bases[Number(baseFrom) as 1 | 2 | 3] = null;
+        if (event.result === "runner_score" && movedRunner) {
+          if (activePitcher) activePitcher.runsAllowed++;
+          addRun(runnerTeam, runnerStats, movedRunner);
+          while (runnerTeam.runsByInning.length < inning) runnerTeam.runsByInning.push(0);
+          runnerTeam.runsByInning[inning - 1]++;
+        } else if (event.result === "runner_out" || event.result === "caught_stealing") {
+          if (event.result === "caught_stealing" && movedRunner) {
+            const runnerStat = runnerStats.get(movedRunner);
+            if (runnerStat) runnerStat.cs++;
+          }
+          outs++;
+          if (outs >= 3) {
+            runnerTeam.lob += [bases[1], bases[2], bases[3]].filter(Boolean).length;
+            bases = { 1: null, 2: null, 3: null };
+            outs = 0;
+            if (half === "top") half = "bottom";
+            else { half = "top"; inning++; }
+          }
+        }
+      }
+      while (home.runsByInning.length < inning) home.runsByInning.push(0);
+      while (away.runsByInning.length < inning) away.runsByInning.push(0);
+      continue;
+    }
+
+    const details = event.details ?? {};
       const runnerId = typeof details.runner_id === "string" ? details.runner_id : null;
       const runnerTeamName = runnerId ? playerTeam.get(runnerId) : undefined;
       const runnerTeam = runnerTeamName === "home" ? home
