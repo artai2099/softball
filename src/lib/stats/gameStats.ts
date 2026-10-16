@@ -225,6 +225,8 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
     }
 
     if(event.result==="error"&&fielding)fielding.errors++;
+    // Team hits do not depend on the batter ID being present in a roster.
+    if(HITS[event.result])batting.hits++;
     if(event.result==="error"&&fielding&&typeof details.error_fielder_id==="string"){
       const row=fielding.stats.get(details.error_fielder_id);if(row)row.fieldingErrors++;
     }
@@ -242,7 +244,7 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
         row.pa++;
         if(event.result==="walk")row.bb++;
         else if(event.result==="hbp")row.hbp++;
-        else {row.ab++;if(event.result==="strikeout")row.so++;const key=HITS[event.result];if(key){row.h++;row[key]++;batting.hits++;}}
+        else {row.ab++;if(event.result==="strikeout")row.so++;const key=HITS[event.result];if(key){row.h++;row[key]++;}}
       }
     }
     if(["out","strikeout","double_play","triple_play","sacrifice_fly","sacrifice_bunt"].includes(event.result)&&fielding){
