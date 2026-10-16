@@ -190,10 +190,17 @@ function advanceBases(result: string, batterId: string | null, bases: Bases) {
     if (b1) scored.push(b1);
     if (b2) scored.push(b2);
     if (b3) scored.push(b3);
-    return {
-      scored,
-      bases: { 1: null, 2: null, 3: null } satisfies Bases,
-    };
+    return { scored, bases: { 1: null, 2: null, 3: null } satisfies Bases };
+  }
+
+  if (result === "sacrifice_fly") {
+    if (b3) scored.push(b3);
+    return { scored, bases: { 1: b1, 2: b2, 3: null } satisfies Bases };
+  }
+
+  if (result === "sacrifice_bunt") {
+    if (b3) scored.push(b3);
+    return { scored, bases: { 1: null, 2: b1, 3: b2 } satisfies Bases };
   }
 
   return { scored, bases };
@@ -271,7 +278,11 @@ export function calculateGameStats(
           runnerTeam.runsByInning[inning - 1]++;
         } else if (event.result === "runner_out") {
           outs++;
-          if (pitcher && ["strikeout", "out", "sacrifice_fly", "sacrifice_bunt"].includes(event.result)) pitcher.pitchingOuts++;
+          if (pitcher) {
+      if (["strikeout", "out", "sacrifice_fly", "sacrifice_bunt"].includes(event.result)) pitcher.pitchingOuts++;
+      else if (event.result === "double_play") pitcher.pitchingOuts += 2;
+      else if (event.result === "triple_play") pitcher.pitchingOuts += 3;
+    }
 
     if (outs >= 3) {
             runnerTeam.lob += [bases[1], bases[2], bases[3]].filter(Boolean).length;
@@ -300,18 +311,15 @@ export function calculateGameStats(
     if (event.result === "error") {
       const position = typeof details.error_position === "string" ? details.error_position : null;
       const fielderId = typeof details.error_fielder_id === "string" ? details.error_fielder_id : null;
-      if (fielderId && defensePlayers) defensePlayers.stats.get(fielderId)!.fieldingErrors++;
+      const errorFielder = fielderId && defensePlayers ? defensePlayers.stats.get(fielderId) : undefined;
+      if (errorFielder) errorFielder.fieldingErrors++;
     }
     if (pitcher) {
       if (event.result === "walk") pitcher.walksAllowed++;
       if (event.result === "strikeout") pitcher.strikeoutsPitched++;
       if (["single", "double", "triple", "home_run"].includes(event.result)) pitcher.hitsAllowed++;
-      if (event.result === "runner_score" || ["single", "double", "triple", "home_run", "walk", "hbp", "error"].includes(event.result)) {
-        const runsAllowed = Number(details.runs_scored ?? (event.result === "runner_score" ? 1 : 0));
-        if (Number.isFinite(runsAllowed) && runsAllowed > 0) pitcher.runsAllowed += runsAllowed;
-        const earned = Number(details.earned_runs ?? 0);
-        if (Number.isFinite(earned) && earned > 0) pitcher.earnedRuns += earned;
-      }
+      const earned = Number(details.earned_runs ?? 0);
+      if (Number.isFinite(earned) && earned > 0) pitcher.earnedRuns += earned;
     }
     if (event.result === "stolen_base" && batterId && batting) batting.stats.get(batterId)!.sb++;
     if (event.result === "caught_stealing" && batterId && batting) batting.stats.get(batterId)!.cs++;
@@ -371,6 +379,8 @@ export function calculateGameStats(
           : uniqueStrings(movement.scored).length;
       }
     }
+    const runsOnPlay = uniqueStrings(movement.scored).length;
+    if (pitcher && runsOnPlay > 0) pitcher.runsAllowed += runsOnPlay;
     for (const runnerId of uniqueStrings(movement.scored)) {
       if (batting) {
         addRun(batting, batting.stats, runnerId);
