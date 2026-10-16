@@ -76,7 +76,9 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
     }
     if (batterId && battingPlayers.some(player => player.player_id === batterId)) details.batter_id = batterId;
     if (pitcherId && activeFielders.some(player => player.player_id === pitcherId)) details.pitcher_id = pitcherId;
-    if (result === "strikeout") {
+    // A third strike entered through the count controls is recorded by the
+    // database as a strikeout too; credit the catcher with the putout in both paths.
+    if (result === "strikeout" || (result === "strike" && game.strikes >= 2)) {
       const catcher = activeFielders.find(player => player.position.toUpperCase() === "C");
       if (catcher) { details.out_position_1 = "C"; details.out_fielder_id_1 = catcher.player_id; }
     }
