@@ -31,7 +31,9 @@ function advanceBases(result: string, batter: string | null, bases: Bases) {
   const {1:b1,2:b2,3:b3}=bases; const scored:string[]=[];
   if(result==="walk"||result==="hbp"){
     if(b1&&b2&&b3)scored.push(b3);
-    return {scored,bases:{1:batter,2:b1,3:b1&&b2?b2:b3} as Bases};
+    // Only forced runners advance. If first is empty, runners on second and
+    // third stay put; if first is occupied, second moves only when forced.
+    return {scored,bases:{1:batter,2:b1??b2,3:b1&&b2?b2:b3} as Bases};
   }
   if(result==="single"||result==="error"){
     if(b3)scored.push(b3);
@@ -46,7 +48,8 @@ function advanceBases(result: string, batter: string | null, bases: Bases) {
     return {scored,bases:{1:null,2:null,3:batter} as Bases};
   }
   if(result==="home_run"){
-    if(batter)scored.push(batter); if(b1)scored.push(b1); if(b2)scored.push(b2); if(b3)scored.push(b3);
+    // Credit runners in their natural scoring order, then the batter.
+    if(b3)scored.push(b3); if(b2)scored.push(b2); if(b1)scored.push(b1); if(batter)scored.push(batter);
     return {scored,bases:emptyBases()};
   }
   if(result==="sacrifice_fly"){
@@ -59,14 +62,81 @@ function advanceBases(result: string, batter: string | null, bases: Bases) {
   }
   return {scored,bases};
 }
-function addRun(team: TeamBox, stats: Map<string,StatLine>, id: string) { team.runs++; const row=stats.get(id); if(row)row.r++; }
-function ensureInning(team: TeamBox, inning: number) { while(team.runsByInning.length<inning)team.runsByInning.push(0); }
+type RunDelta = { home: number; away: number };
+type TeamSide = "home" | "away";
+
+function snapshotInteger(value: unknown): number | null {
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function ensureInning(team: TeamBox, inning: number) {
+  while (team.runsByInning.length < inning) team.runsByInning.push(0);
+}
+
+function addTeamRuns(team: TeamBox, inning: number, count: number) {
+  if (count <= 0) return;
+  team.runs += count;
+  ensureInning(team, inning);
+  team.runsByInning[inning - 1] += count;
+}
+
+function creditKnownScorers(
+  ids: string[],
+  countBySide: RunDelta,
+  teams: { home: TeamBox & { stats: Map<string, StatLine> }; away: TeamBox & { stats: Map<string, StatLine> } },
+  playerTeam: Map<string, TeamSide>,
+) {
+  const credited: RunDelta = { home: 0, away: 0 };
+  for (const id of ids) {
+    const side = playerTeam.get(id);
+    if (!side || credited[side] >= countBySide[side]) continue;
+    const row = teams[side].stats.get(id);
+    if (row) {
+      row.r++;
+      credited[side]++;
+    }
+  }
+}
+
+function applyEventRuns(
+  teams: { home: TeamBox & { stats: Map<string, StatLine> }; away: TeamBox & { stats: Map<string, StatLine> },
+  inning: number,
+  scoreDelta: RunDelta | null,
+  fallbackSide: TeamSide,
+  knownScorers: string[],
+  fallbackCount: number,
+  playerTeam: Map<string, TeamSide>,
+) {
+  if (scoreDelta) {
+    // Recorded game snapshots are the source of truth for the team score and
+    // inning totals. Individual runs are credited only when the scorer is known.
+    addTeamRuns(teams.home, inning, scoreDelta.home);
+    addTeamRuns(teams.away, inning, scoreDelta.away);
+    creditKnownScorers(knownScorers, scoreDelta, teams, playerTeam);
+    return;
+  }
+
+  addTeamRuns(teams[fallbackSide], inning, fallbackCount);
+  let credited = 0;
+  for (const id of knownScorers) {
+    if (credited >= fallbackCount) break;
+    const row = teams[fallbackSide].stats.get(id);
+    if (row) {
+      row.r++;
+      credited++;
+    }
+  }
+}
 
 export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[], events: GameEvent[]): {home:TeamBox;away:TeamBox} {
   const home=newTeam(homePlayers), away=newTeam(awayPlayers);
   const playerTeam=new Map<string,"home"|"away">();
   homePlayers.forEach(p=>playerTeam.set(p.player_id,"home")); awayPlayers.forEach(p=>playerTeam.set(p.player_id,"away"));
   let bases=emptyBases(), outs=0, inning=1, half:"top"|"bottom"="top", lastPitcherId:string|null=null;
+  let priorSnapshotHomeScore = 0;
+  let priorSnapshotAwayScore = 0;
+  let priorEventHadScoreSnapshot = true;
   const syncFromSnapshot=(event: GameEvent) => {
     const snapshot=event.state_after;
     if(!snapshot)return;
@@ -88,12 +158,33 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
     }
   };
   const ordered=events.filter(e=>!e.voided_at).sort((a,b)=>a.sequence-b.sequence);
-  for(const event of ordered){
+  for(const [eventIndex,event] of ordered.entries()){
     ensureInning(home,inning); ensureInning(away,inning);
+    const inningForEvent = inning;
+    const halfForEvent = half;
+    const snapshotHomeScore = snapshotInteger(event.state_after?.home_score);
+    const snapshotAwayScore = snapshotInteger(event.state_after?.away_score);
+    const hasScoreSnapshot = snapshotHomeScore !== null && snapshotAwayScore !== null;
+    let scoreDelta: RunDelta | null = null;
+    if (hasScoreSnapshot) {
+      if (eventIndex === 0 || priorEventHadScoreSnapshot) {
+        scoreDelta = {
+          home: Math.max(0, snapshotHomeScore - priorSnapshotHomeScore),
+          away: Math.max(0, snapshotAwayScore - priorSnapshotAwayScore),
+        };
+      }
+      priorSnapshotHomeScore = snapshotHomeScore;
+      priorSnapshotAwayScore = snapshotAwayScore;
+    }
+    priorEventHadScoreSnapshot = hasScoreSnapshot;
+
     const details=event.details??{};
     const batter=batterIdOf(event), batterTeam=batter?playerTeam.get(batter):undefined;
-    const batting=batterTeam==="home"?home:batterTeam==="away"?away:null;
-    const fielding=batting===home?away:batting===away?home:null;
+    // The batter ID is used for individual stats; the half-inning is the
+    // fallback for team stats when opponent/legacy batter IDs are unavailable.
+    const battingSide: TeamSide = batterTeam ?? (halfForEvent === "top" ? "away" : "home");
+    const batting=battingSide==="home"?home:away;
+    const fielding=batting===home?away:home;
     const suppliedPitcher=typeof details.pitcher_id==="string"?details.pitcher_id:null;
     if(suppliedPitcher)lastPitcherId=suppliedPitcher;
     const pitcherTeam=lastPitcherId?playerTeam.get(lastPitcherId):undefined;
@@ -111,8 +202,18 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
       } else if(from!==null&&["runner_score","runner_out","caught_stealing"].includes(event.result)){
         const id=bases[from]??runner; bases[from]=null;
         if(event.result==="runner_score"&&id){
-          if(pitcher)pitcher.runsAllowed++;
-          addRun(runnerTeam,runnerTeam.stats,id); ensureInning(runnerTeam,inning); runnerTeam.runsByInning[inning-1]++;
+          const fallbackSide: TeamSide = runnerTeam === home ? "home" : "away";
+          applyEventRuns(
+            { home, away },
+            inningForEvent,
+            scoreDelta,
+            fallbackSide,
+            [id],
+            1,
+            playerTeam,
+          );
+          const runsAllowedOnPlay = scoreDelta ? scoreDelta.home + scoreDelta.away : 1;
+          if (pitcher && runsAllowedOnPlay > 0) pitcher.runsAllowed += runsAllowedOnPlay;
         } else if(event.result==="runner_out"||event.result==="caught_stealing"){
           if(event.result==="caught_stealing"&&id){const row=runnerTeam.stats.get(id);if(row)row.cs++;}
           outs++;
@@ -150,14 +251,32 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
     }
     const movement=advanceBases(event.result,batter,bases);
     const scored=strings(movement.scored);
+    const runsOnBattingSide = scoreDelta
+      ? scoreDelta[battingSide]
+      : scored.length;
     const earnedRunsOnPlay=Number(details.earned_runs??0);
-    if(pitcher&&scored.length>0&&Number.isFinite(earnedRunsOnPlay)&&earnedRunsOnPlay>0)pitcher.earnedRuns+=Math.min(earnedRunsOnPlay,scored.length);
-    if(pitcher&&scored.length)pitcher.runsAllowed+=scored.length;
-    if(batting&&batter&&["walk","hbp","single","double","triple","home_run","sacrifice_fly"].includes(event.result)){
-      const row=batting.stats.get(batter);
-      if(row){const explicit=details.rbi;row.rbi+=typeof explicit==="number"?Math.max(0,explicit):(event.result==="sacrifice_fly"?scored.length:scored.length);}
+    if(pitcher&&runsOnBattingSide>0&&Number.isFinite(earnedRunsOnPlay)&&earnedRunsOnPlay>0){
+      pitcher.earnedRuns+=Math.min(earnedRunsOnPlay,runsOnBattingSide);
     }
-    scored.forEach(id=>{if(batting){addRun(batting,batting.stats,id);ensureInning(batting,inning);batting.runsByInning[inning-1]++;}});
+    if(pitcher&&runsOnBattingSide>0)pitcher.runsAllowed+=runsOnBattingSide;
+    if(batter&&["walk","hbp","single","double","triple","home_run","sacrifice_fly","sacrifice_bunt"].includes(event.result)){
+      const row=batting.stats.get(batter);
+      if(row){
+        const explicit=details.rbi;
+        row.rbi+=typeof explicit==="number"
+          ? Math.max(0,explicit)
+          : runsOnBattingSide;
+      }
+    }
+    applyEventRuns(
+      { home, away },
+      inningForEvent,
+      scoreDelta,
+      battingSide,
+      scored,
+      scored.length,
+      playerTeam,
+    );
     bases=movement.bases;
     const outCount=event.result==="double_play"?2:event.result==="triple_play"?3:["strikeout","out","sacrifice_fly","sacrifice_bunt"].includes(event.result)?1:0;
     outs+=outCount;
