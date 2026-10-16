@@ -62,7 +62,20 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
   async function record(result:string,selected:string[]=[]) {
     setSaving(true);setMessage("");
     const fielderForPosition = (position: string) => activeFielders.find(player => player.position.toUpperCase() === position.toUpperCase())?.player_id;
-    const details={...(result==="error"?{error_position:selected[0],...(fielderForPosition(selected[0])?{error_fielder_id:fielderForPosition(selected[0])}:{})}:Object.fromEntries(selected.flatMap((position,index)=>[[`out_position_${index+1}`,position],...(fielderForPosition(position)?[[`out_fielder_id_${index+1}`,fielderForPosition(position)!]]:[])])),...(batterId && battingPlayers.some((player) => player.player_id === batterId) ? { batter_id: batterId } : {}),...(pitcherId && activeFielders.some(player=>player.player_id===pitcherId)?{pitcher_id:pitcherId}:{})};
+    const details: Record<string, string> = {};
+    if (result === "error") {
+      details.error_position = selected[0];
+      const fielderId = fielderForPosition(selected[0]);
+      if (fielderId) details.error_fielder_id = fielderId;
+    } else {
+      selected.forEach((position, index) => {
+        details[`out_position_${index + 1}`] = position;
+        const fielderId = fielderForPosition(position);
+        if (fielderId) details[`out_fielder_id_${index + 1}`] = fielderId;
+      });
+    }
+    if (batterId && battingPlayers.some(player => player.player_id === batterId)) details.batter_id = batterId;
+    if (pitcherId && activeFielders.some(player => player.player_id === pitcherId)) details.pitcher_id = pitcherId;
     try{const controller=new AbortController();
       const timeout=window.setTimeout(()=>controller.abort(),10000);
       let response:Response;
