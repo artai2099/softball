@@ -177,6 +177,8 @@ begin
       when 'out' then array['out_position_1']
       when 'double_play' then array['out_position_1','out_position_2']
       when 'triple_play' then array['out_position_1','out_position_2','out_position_3']
+      when 'sacrifice_fly' then array['out_position_1']
+      when 'sacrifice_bunt' then array['out_position_1']
       else array[]::text[]
     end
   loop
