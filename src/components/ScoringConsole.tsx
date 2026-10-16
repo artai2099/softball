@@ -157,7 +157,6 @@ export function ScoringConsole({ initialGame,initialEvents,initialLineup,initial
           <Link className="button red" href={`/dashboard/games/${game.id}/lineup`}>Edit lineup</Link>
         </section>
       )}
->
 
       <section className="scorekeeperTop">
 
