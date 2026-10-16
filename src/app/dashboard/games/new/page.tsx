@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createGame } from "./actions";
 import OpponentTeamPicker from "./OpponentTeamPicker";
 import PregameReviewSubmit from "./PregameReviewSubmit";
+import RepeatLastMatchupButton from "./RepeatLastMatchupButton";
 import { requireMembership } from "@/lib/auth";
 
 export default async function NewGamePage() {
@@ -47,9 +48,7 @@ export default async function NewGamePage() {
           <form action={createGame} className="form">
             {lastGame && (
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
-                <button type="reset" className="button secondary" onClick={() => {
-                  window.setTimeout(() => document.dispatchEvent(new CustomEvent("gameday-repeat-matchup-reset")), 0);
-                }}>Repeat last matchup</button>
+                <RepeatLastMatchupButton />
                 <span className="muted" style={{ fontSize: 13 }}>
                   Reuses the last home team, opponent, venue, innings and visibility. Set a new date and time.
                 </span>
