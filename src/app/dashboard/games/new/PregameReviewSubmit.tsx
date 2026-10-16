@@ -36,9 +36,6 @@ export default function PregameReviewSubmit() {
     const selectedHome = form.querySelector<HTMLSelectElement>('select[name="homeTeamId"]');
     const selectedOpponent = form.querySelector<HTMLInputElement>('input[name="awayTeamId"]');
     const opponentName = String(values.get("awayName") ?? "").trim();
-    const selectedTeamLabel = selectedOpponent?.value
-      ? document.querySelector("#opponent-team-search")?.getAttribute("value")
-      : "";
     const opponentSearch = form.querySelector<HTMLInputElement>("#opponent-team-search");
     const innings = String(values.get("innings") ?? "7");
     const visibility = String(values.get("visibility") ?? "private");
@@ -53,7 +50,6 @@ export default function PregameReviewSubmit() {
       innings: `${innings} innings`,
       visibility: visibility === "public" ? "Public score and video page" : "Private organization game",
     });
-    void selectedTeamLabel;
   }
 
   function confirmCreate() {
