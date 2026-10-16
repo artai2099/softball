@@ -67,6 +67,26 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
   const playerTeam=new Map<string,"home"|"away">();
   homePlayers.forEach(p=>playerTeam.set(p.player_id,"home")); awayPlayers.forEach(p=>playerTeam.set(p.player_id,"away"));
   let bases=emptyBases(), outs=0, inning=1, half:"top"|"bottom"="top", lastPitcherId:string|null=null;
+  const syncFromSnapshot=(event: GameEvent) => {
+    const snapshot=event.state_after;
+    if(!snapshot)return;
+    const nextInning=Number(snapshot.inning);
+    const nextHalf=snapshot.half==="top"||snapshot.half==="bottom"?snapshot.half:null;
+    const nextOuts=Number(snapshot.outs);
+    if(Number.isInteger(nextInning)&&nextInning>0&&nextHalf&&Number.isInteger(nextOuts)&&nextOuts>=0&&nextOuts<=2){
+      if(nextHalf!==half||nextInning!==inning)lastPitcherId=null;
+      inning=nextInning;half=nextHalf;outs=nextOuts;
+    }
+    const snapshotBases=snapshot.bases;
+    if(snapshotBases&&typeof snapshotBases==="object"){
+      const b=snapshotBases as Record<string,unknown>;
+      bases={
+        1:typeof b["1"]==="string"?b["1"]:null,
+        2:typeof b["2"]==="string"?b["2"]:null,
+        3:typeof b["3"]==="string"?b["3"]:null,
+      };
+    }
+  };
   const ordered=events.filter(e=>!e.voided_at).sort((a,b)=>a.sequence-b.sequence);
   for(const event of ordered){
     ensureInning(home,inning); ensureInning(away,inning);
@@ -100,7 +120,7 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
           if(outs>=3){runnerTeam.lob += [bases[1],bases[2],bases[3]].filter(Boolean).length;bases=emptyBases();outs=0;if(half==="top")half="bottom";else{half="top";inning++;}lastPitcherId=null;}
         }
       }
-      ensureInning(home,inning);ensureInning(away,inning);continue;
+      syncFromSnapshot(event);ensureInning(home,inning);ensureInning(away,inning);continue;
     }
 
     if(event.result==="error"&&fielding)fielding.errors++;
@@ -143,6 +163,7 @@ export function calculateGameStats(homePlayers: Player[], awayPlayers: Player[],
     outs+=outCount;
     if(pitcher&&outCount)pitcher.pitchingOuts+=outCount;
     if(outs>=3){if(batting)batting.lob += [bases[1],bases[2],bases[3]].filter(Boolean).length;bases=emptyBases();outs=0;if(half==="top")half="bottom";else{half="top";inning++;}lastPitcherId=null;}
+    syncFromSnapshot(event);ensureInning(home,inning);ensureInning(away,inning);
   }
   home.rows=[...home.stats.values()];away.rows=[...away.stats.values()];
   return {home,away};
