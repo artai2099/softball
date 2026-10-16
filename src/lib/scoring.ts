@@ -36,13 +36,13 @@ export const scoreEventSchema = z.object({
 export type ScoreEventInput = z.infer<typeof scoreEventSchema>;
 
 export const runnerActionSchema = z.object({
-  action: z.enum(["advance", "score", "out"]),
+  action: z.enum(["advance", "score", "out", "steal", "caught_stealing"]),
   baseFrom: z.enum(["1", "2", "3"]),
   baseTo: z.enum(["2", "3"]).optional(),
   idempotencyKey: z.string().uuid(),
   expectedVersion: z.number().int().nonnegative(),
 }).superRefine((value, ctx) => {
-  if (value.action === "advance") {
+  if (value.action === "advance" || value.action === "steal") {
     const expectedTo = value.baseFrom === "1" ? "2" : value.baseFrom === "2" ? "3" : undefined;
     if (!expectedTo || value.baseTo !== expectedTo) {
       ctx.addIssue({ code: "custom", path: ["baseTo"], message: "Runner must advance to the next base." });
