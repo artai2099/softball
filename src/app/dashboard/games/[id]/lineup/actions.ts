@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireMembership } from "@/lib/auth";
 
 const POSITIONS = new Set(["", "P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DP", "FLEX"]);
@@ -86,5 +87,5 @@ export async function saveLineup(gameId: string, formData: FormData) {
 
   revalidatePath(`/dashboard/games/${game.id}`);
   revalidatePath(`/dashboard/games/${game.id}/lineup`);
-  return { success: true, count: selected.length };
+  redirect(`/dashboard/games/${game.id}/lineup?saved=${selected.length}`);
 }
