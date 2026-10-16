@@ -4,11 +4,17 @@ export const defensivePositions = ["P", "C", "1B", "2B", "3B", "SS", "LF", "CF",
 const defensivePosition = z.enum(defensivePositions);
 
 export const scoreEventSchema = z.object({
-  result: z.enum(["ball", "strike", "foul", "single", "double", "triple", "home_run", "walk", "hbp", "strikeout", "out", "error", "double_play", "triple_play"]),
+  result: z.enum(["ball", "strike", "foul", "single", "double", "triple", "home_run", "walk", "hbp", "strikeout", "out", "error", "double_play", "triple_play", "sacrifice_fly", "sacrifice_bunt"]),
   idempotencyKey: z.string().uuid(),
   expectedVersion: z.number().int().nonnegative(),
   details: z.object({
     batter_id: z.string().uuid().optional(),
+    pitcher_id: z.string().uuid().optional(),
+    error_fielder_id: z.string().uuid().optional(),
+    out_fielder_id_1: z.string().uuid().optional(),
+    out_fielder_id_2: z.string().uuid().optional(),
+    out_fielder_id_3: z.string().uuid().optional(),
+    rbi: z.number().int().nonnegative().optional(),
     error_position: defensivePosition.optional(),
     out_position_1: defensivePosition.optional(),
     out_position_2: defensivePosition.optional(),
