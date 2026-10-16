@@ -40,7 +40,6 @@ export default function LineupEditor({ roster, lineupPlayers, action, gameId }: 
 
   const activeIds = new Set(orderedIds);
   const availablePlayers = roster.filter((player) => !activeIds.has(player.id));
-  const allOrderedIds = [...orderedIds, ...availablePlayers.map((player) => player.id)];
   const playerById = new Map(roster.map((player) => [player.id, player]));
 
   function move(id: string, direction: -1 | 1) {
