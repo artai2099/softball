@@ -210,6 +210,25 @@ describe("calculateGameStats", () => {
     expect(stats.away.rows.find((row) => row.playerId === "away-4")).toMatchObject({ r: 1, hr: 1, rbi: 4 });
   });
 
+  it("counts team hits even when an event has no roster batter ID", () => {
+    const stats = calculateGameStats(homePlayers, awayPlayers, [
+      {
+        sequence: 1,
+        result: "single",
+        details: {},
+        state_after: {
+          inning: 1, half: "top", outs: 0,
+          home_score: 0, away_score: 0,
+          bases: { "1": "unlisted-opponent-runner", "2": null, "3": null },
+        },
+        voided_at: null,
+      },
+    ]);
+
+    expect(stats.away.hits).toBe(1);
+    expect(stats.away.rows.reduce((total, row) => total + row.h, 0)).toBe(0);
+  });
+
   it("uses saved score snapshots for team runs when a batter ID is missing", () => {
     const stats = calculateGameStats(homePlayers, awayPlayers, [
       {
