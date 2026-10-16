@@ -125,6 +125,22 @@ begin
 
       g.current_batter_id:=batter_id;
     end if;
+  elsif g.half='top' and p_details ? 'batter_id' then
+    begin
+      batter_id:=(p_details->>'batter_id')::uuid;
+    exception when invalid_text_representation then
+      raise exception 'Invalid batter_id' using errcode='22000';
+    end;
+
+    if g.away_team_id is not null
+       and not exists (
+         select 1 from public.players p
+          where p.id=batter_id and p.team_id=g.away_team_id and p.active
+       )
+    then
+      raise exception 'Batter is not an active player on the away team' using errcode='22000';
+    end if;
+
   elsif p_details ? 'batter_id' then
     begin
       batter_id:=(p_details->>'batter_id')::uuid;
@@ -170,6 +186,40 @@ begin
         using errcode='22000';
     end if;
   end loop;
+
+  -- Validate explicit pitcher/fielder IDs against the defensive team's roster.
+  if p_details ? 'pitcher_id' then
+    if not exists (
+      select 1 from public.players p
+       where p.id=(p_details->>'pitcher_id')::uuid
+         and p.team_id=case when g.half='top' then g.home_team_id else g.away_team_id end
+    ) then
+      raise exception 'Pitcher must belong to the fielding team' using errcode='22000';
+    end if;
+  end if;
+
+  if p_details ? 'error_fielder_id' and not exists (
+    select 1 from public.players p
+     where p.id=(p_details->>'error_fielder_id')::uuid
+       and p.team_id=case when g.half='top' then g.home_team_id else g.away_team_id end
+  ) then
+    raise exception 'Error fielder must belong to the fielding team' using errcode='22000';
+  end if;
+
+  if exists (
+    select 1 from (values
+      (p_details->>'out_fielder_id_1'),
+      (p_details->>'out_fielder_id_2'),
+      (p_details->>'out_fielder_id_3')
+    ) as fielder(id)
+    where fielder.id is not null and not exists (
+      select 1 from public.players p
+       where p.id=fielder.id::uuid
+         and p.team_id=case when g.half='top' then g.home_team_id else g.away_team_id end
+    )
+  ) then
+    raise exception 'Out fielder must belong to the fielding team' using errcode='22000';
+  end if;
 
   if p_result in (
     'ball','strike','foul','single','double','triple','home_run',
