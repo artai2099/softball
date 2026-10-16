@@ -45,6 +45,45 @@ describe("calculateGameStats", () => {
     expect(stats.away.rows.find((row) => row.playerId === "away-2")?.rbi).toBe(1);
   });
 
+  it("credits runs from manual runner advance and score events", () => {
+    const stats = calculateGameStats(homePlayers, awayPlayers, [
+      event(1, "single", "away-1"),
+      {
+        sequence: 2,
+        result: "runner_advance",
+        details: { runner_id: "away-1", base_from: "1", base_to: "2" },
+        voided_at: null,
+      },
+      {
+        sequence: 3,
+        result: "runner_score",
+        details: { runner_id: "away-1", base_from: "2", base_to: null },
+        voided_at: null,
+      },
+    ]);
+
+    expect(stats.away.runs).toBe(1);
+    expect(stats.away.runsByInning).toEqual([1]);
+    expect(stats.away.rows.find((row) => row.playerId === "away-1")?.r).toBe(1);
+    // A separate runner action does not guess an RBI for an earlier batter.
+    expect(stats.away.rows.find((row) => row.playerId === "away-1")?.rbi).toBe(0);
+  });
+
+  it("removes a runner from the bases after a manual runner out", () => {
+    const stats = calculateGameStats(homePlayers, awayPlayers, [
+      event(1, "single", "away-1"),
+      {
+        sequence: 2,
+        result: "runner_out",
+        details: { runner_id: "away-1", base_from: "1", base_to: null },
+        voided_at: null,
+      },
+    ]);
+
+    expect(stats.away.runs).toBe(0);
+    expect(stats.away.rows.find((row) => row.playerId === "away-1")?.r).toBe(0);
+  });
+
   it("does not count voided events in batting totals", () => {
     const stats = calculateGameStats(homePlayers, awayPlayers, [
       { ...event(1, "home_run", "away-2"), voided_at: "2026-10-15T12:00:00Z" },
